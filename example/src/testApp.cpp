@@ -2,36 +2,43 @@
 
 #include "ofxInteractivePrimitives.h"
 
-class ControlPoint : public ofxInteractivePrimitives
+class MyRect : public ofxInteractivePrimitives
 {
 public:
+	
+	MyRect()
+	{
+		setPosition(ofRandomWidth(), ofRandomHeight(), 0);
+	}
+	
+	void update()
+	{
+		if (!isDown())
+		{
+			move(ofRandom(-2, 2), ofRandom(-2, 2), 0);
+		}
+	}
 	
 	void draw()
 	{
 		if (isHover())
-		{
 			ofFill();
-		}
 		else
-		{
 			ofNoFill();
-		}
 		
 		if (isDown())
-		{
 			ofSetColor(255, 0, 0);
-		}
 		else
-		{
 			ofSetColor(255);
-		}
 		
 		ofRect(0, 0, 100, 100);
+		
+		ofSetColor(0, 255, 0);
+		ofDrawBitmapString("drag me", 5, 15);
 	}
 	
 	void hittest()
 	{
-		ofFill();
 		ofRect(0, 0, 100, 100);
 	}
 	
@@ -39,9 +46,18 @@ public:
 	{
 		printf("%i %i\n", x, y);
 	}
+	
+	void mouseDragged(int x, int y, int button)
+	{
+		ofVec2f d;
+		d.x = ofGetMouseX() - ofGetPreviousMouseX();
+		d.y = ofGetMouseY() - ofGetPreviousMouseY();
+		
+		move(d);
+	}
 };
 
-ControlPoint CP;
+vector<MyRect*> rects;
 
 //--------------------------------------------------------------
 void testApp::setup()
@@ -50,7 +66,10 @@ void testApp::setup()
 	ofSetVerticalSync(true);
 	ofBackground(0);
 	
-	CP.setPosition(300, 300, 0);
+	for (int i = 0; i < 5; i++)
+	{
+		rects.push_back(new MyRect);
+	}
 }
 
 //--------------------------------------------------------------

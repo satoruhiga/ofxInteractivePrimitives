@@ -45,7 +45,6 @@ public:
 		ofAddListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
 		ofAddListener(ofEvents().mouseMoved, this, &ofxInteractivePrimitives::Context::mouseMoved);
 		ofAddListener(ofEvents().mouseDragged, this, &ofxInteractivePrimitives::Context::mouseDragged);
-
 	}
 	
 	void disableAllEvent()
@@ -57,7 +56,6 @@ public:
 		ofRemoveListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
 		ofRemoveListener(ofEvents().mouseMoved, this, &ofxInteractivePrimitives::Context::mouseMoved);
 		ofRemoveListener(ofEvents().mouseDragged, this, &ofxInteractivePrimitives::Context::mouseDragged);
-
 	}
 	
 	void prepare()
@@ -72,6 +70,7 @@ public:
 		for (int i = 0; i < elements.size(); i++)
 		{
 			ofxInteractivePrimitives *e = elements[i];
+			if (!e->getVisible()) continue;
 			
 			e->transformGL();
 			glPushName(e->object_id);
@@ -99,9 +98,11 @@ public:
 		GLint hits;
 		
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		ofPushStyle();
 		ofPushView();
 		
 		glEnable(GL_DEPTH_TEST);
+		ofFill();
 		
 		glSelectBuffer(BUFSIZE, selectBuf);
 		glRenderMode(GL_SELECT);
@@ -128,6 +129,7 @@ public:
 		hits = glRenderMode(GL_RENDER);
 		
 		ofPopView();
+		ofPopStyle();
 		glPopAttrib();
 		
 		if (hits <= 0) return vector<Selection>();
@@ -180,21 +182,42 @@ public:
 	{
 		ofxInteractivePrimitives::prepareModelViewMatrix();
 		
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glPushMatrix();
+		ofPushStyle();
+		
 		for (int i = 0; i < elements.size(); i++)
 		{
 			ofxInteractivePrimitives *w = elements[i];
+			if (!w->getVisible()) continue;
+			
 			w->transformGL();
 			w->draw();
 			w->restoreTransformGL();
 		}
+		
+		ofPopStyle();
+		glPopMatrix();
+		glPopAttrib();
 	}
 	
 	void update(ofEventArgs&)
 	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glPushMatrix();
+		ofPushStyle();
+		
 		for (int i = 0; i < elements.size(); i++)
 		{
+			ofxInteractivePrimitives *w = elements[i];
+			if (!w->getVisible()) continue;
+			
 			elements[i]->update();
 		}
+		
+		ofPopStyle();
+		glPopMatrix();
+		glPopAttrib();
 	}
 	
 	void mousePressed(ofMouseEventArgs &e)
@@ -348,7 +371,7 @@ static ofxInteractivePrimitives::Context& getContext()
 	return *_context;
 }
 
-ofxInteractivePrimitives::ofxInteractivePrimitives()
+ofxInteractivePrimitives::ofxInteractivePrimitives() : object_id(0), hover(false), down(false), visible(true)
 {
 	getContext().registerElement(this);
 }

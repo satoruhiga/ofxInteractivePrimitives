@@ -30,12 +30,15 @@ public:
 	void setParent(ofxInteractivePrimitives *o) { ofNode::setParent(*o); }
 	ofxInteractivePrimitives* getParent() { return (ofxInteractivePrimitives*)ofNode::getParent(); }
 	
+	void setVisible(bool v) { visible = v; }
+	bool getVisible() { return visible; }
+	
 	bool isHover() { return hover; }
 	bool isDown() { return down; }
 	
 private:
 	
 	unsigned int object_id;
-	bool hover, down;
+	bool hover, down, visible;
 	
 };
