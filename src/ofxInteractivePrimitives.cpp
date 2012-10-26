@@ -385,3 +385,22 @@ void ofxInteractivePrimitives::prepareModelViewMatrix()
 {
 	getContext().prepare();
 }
+
+ofVec2f ofxInteractivePrimitives::getMouseDelta()
+{
+	return ofVec2f(ofGetMouseX() - ofGetPreviousMouseX(), ofGetMouseY() - ofGetPreviousMouseY());
+}
+
+ofVec3f ofxInteractivePrimitives::localToGlobal(const ofVec3f& v)
+{
+	// TODO: cache matrix
+	ofMatrix4x4 m = getGlobalTransformMatrix();
+	return m.preMult(v);
+}
+
+ofVec3f ofxInteractivePrimitives::globalToLocal(const ofVec3f& v)
+{
+	// TODO: cache matrix
+	ofMatrix4x4 m = getGlobalTransformMatrix().getInverse();
+	return m.preMult(v);
+}

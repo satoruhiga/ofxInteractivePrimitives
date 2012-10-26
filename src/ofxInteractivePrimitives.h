@@ -36,6 +36,12 @@ public:
 	bool isHover() { return hover; }
 	bool isDown() { return down; }
 	
+	// utils
+	ofVec2f getMouseDelta();
+	
+	ofVec3f localToGlobal(const ofVec3f& v);
+	ofVec3f globalToLocal(const ofVec3f& v);
+	
 private:
 	
 	unsigned int object_id;
