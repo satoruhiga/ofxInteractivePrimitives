@@ -58,6 +58,7 @@ public:
 };
 
 vector<MyRect*> rects;
+ofxInteractivePrimitivesRoot root;
 
 //--------------------------------------------------------------
 void testApp::setup()
@@ -69,19 +70,20 @@ void testApp::setup()
 	for (int i = 0; i < 5; i++)
 	{
 		rects.push_back(new MyRect);
+		rects.back()->setParent(&root);
 	}
 }
 
 //--------------------------------------------------------------
 void testApp::update()
 {
-
+	root.update();
 }
 
 //--------------------------------------------------------------
 void testApp::draw()
 {
-	
+	root.draw();
 }
 
 //--------------------------------------------------------------

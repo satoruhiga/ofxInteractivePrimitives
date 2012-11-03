@@ -2,8 +2,12 @@
 
 #include "ofMain.h"
 
+class ofxInteractivePrimitivesRoot;
+
 class ofxInteractivePrimitives : public ofNode
 {
+	friend class ofxInteractivePrimitivesRoot;
+	
 public:
 	
 	class Context;
@@ -27,8 +31,9 @@ public:
 	// virtual void keyPressed(int key) {}
 	// virtual void keyReleased(int key) {}
 	
-	void setParent(ofxInteractivePrimitives *o) { ofNode::setParent(*o); }
+	void setParent(ofxInteractivePrimitives *o);
 	ofxInteractivePrimitives* getParent() { return (ofxInteractivePrimitives*)ofNode::getParent(); }
+	void clearParent();
 	
 	void setVisible(bool v) { visible = v; }
 	bool getVisible() { return visible; }
@@ -42,9 +47,26 @@ public:
 	ofVec3f localToGlobal(const ofVec3f& v);
 	ofVec3f globalToLocal(const ofVec3f& v);
 	
+protected:
+	
+	struct Internal {};
+	void draw(const Internal &);
+	void update(const Internal &);
+	
 private:
 	
 	unsigned int object_id;
 	bool hover, down, visible;
+	
+	vector<ofxInteractivePrimitives*> children;
+	
+};
+
+class ofxInteractivePrimitivesRoot : public ofxInteractivePrimitives
+{
+public:
+	
+	void draw();
+	void update();
 	
 };

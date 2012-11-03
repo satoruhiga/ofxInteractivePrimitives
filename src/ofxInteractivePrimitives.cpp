@@ -38,8 +38,8 @@ public:
 	
 	void enableAllEvent()
 	{
-		ofAddListener(ofEvents().update, this, &ofxInteractivePrimitives::Context::update);
-		ofAddListener(ofEvents().draw, this, &ofxInteractivePrimitives::Context::draw);
+//		ofAddListener(ofEvents().update, this, &ofxInteractivePrimitives::Context::update);
+//		ofAddListener(ofEvents().draw, this, &ofxInteractivePrimitives::Context::draw);
 		
 		ofAddListener(ofEvents().mousePressed, this, &ofxInteractivePrimitives::Context::mousePressed);
 		ofAddListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
@@ -49,8 +49,8 @@ public:
 	
 	void disableAllEvent()
 	{
-		ofRemoveListener(ofEvents().update, this, &ofxInteractivePrimitives::Context::update);
-		ofRemoveListener(ofEvents().draw, this, &ofxInteractivePrimitives::Context::draw);
+//		ofRemoveListener(ofEvents().update, this, &ofxInteractivePrimitives::Context::update);
+//		ofRemoveListener(ofEvents().draw, this, &ofxInteractivePrimitives::Context::draw);
 		
 		ofRemoveListener(ofEvents().mousePressed, this, &ofxInteractivePrimitives::Context::mousePressed);
 		ofRemoveListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
@@ -403,4 +403,114 @@ ofVec3f ofxInteractivePrimitives::globalToLocal(const ofVec3f& v)
 	// TODO: cache matrix
 	ofMatrix4x4 m = getGlobalTransformMatrix().getInverse();
 	return m.preMult(v);
+}
+
+void ofxInteractivePrimitives::setParent(ofxInteractivePrimitives *o)
+{
+	ofNode::setParent(*o);
+	o->children.push_back(this);
+}
+
+void ofxInteractivePrimitives::clearParent()
+{
+	ofxInteractivePrimitives *p = getParent();
+	if (p)
+	{
+		vector<ofxInteractivePrimitives*> &p_children = p->children;
+		vector<ofxInteractivePrimitives*>::iterator it;
+		
+		it = remove(p_children.begin(), p_children.end(), this);
+		p_children.erase(it, p_children.end());
+	}
+	
+	ofNode::clearParent();
+}
+
+void ofxInteractivePrimitives::draw(const Internal &)
+{
+	static Internal intn;
+	
+	if (getVisible())
+	{
+		glPushMatrix();
+		glMultMatrixf(getLocalTransformMatrix().getPtr());
+		
+		draw();
+		
+		for (int i = 0; i < children.size(); i++)
+		{
+			if (children[i]->getVisible())
+				children[i]->draw(intn);
+		}
+		
+		glPopMatrix();
+	}
+}
+
+void ofxInteractivePrimitives::update(const Internal &)
+{
+	static Internal intn;
+	
+	if (getVisible())
+	{
+		update();
+		
+		for (int i = 0; i < children.size(); i++)
+		{
+			if (children[i]->getVisible())
+				children[i]->update(intn);
+		}
+	}
+}
+
+void ofxInteractivePrimitivesRoot::draw()
+{
+	ofxInteractivePrimitives::prepareModelViewMatrix();
+	
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushMatrix();
+	ofPushStyle();
+	
+	static Internal intn;
+	
+	if (getVisible())
+	{
+		glPushMatrix();
+		glMultMatrixf(getLocalTransformMatrix().getPtr());
+		
+		for (int i = 0; i < children.size(); i++)
+		{
+			if (children[i]->getVisible())
+				children[i]->draw(intn);
+		}
+		
+		glPopMatrix();
+	}
+	
+	ofPopStyle();
+	glPopMatrix();
+	glPopAttrib();
+
+}
+
+void ofxInteractivePrimitivesRoot::update()
+{
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushMatrix();
+	ofPushStyle();
+	
+	static Internal intn;
+	
+	if (getVisible())
+	{
+		for (int i = 0; i < children.size(); i++)
+		{
+			if (children[i]->getVisible())
+				children[i]->update(intn);
+		}
+	}
+	
+	ofPopStyle();
+	glPopMatrix();
+	glPopAttrib();
 }
