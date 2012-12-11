@@ -12,9 +12,10 @@ public:
 	unsigned long current_object_id;
 	float current_depth;
 	
-	ofxInteractivePrimitives *current_responder;
+	ofxInteractivePrimitives *current_object;
+	ofxInteractivePrimitives *focus_object;
 
-	Context() : current_object_id(0), current_depth(0), current_responder(NULL)
+	Context() : current_object_id(0), current_depth(0), current_object(NULL)
 	{
 		enableAllEvent();
 	}
@@ -45,6 +46,9 @@ public:
 		ofAddListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
 		ofAddListener(ofEvents().mouseMoved, this, &ofxInteractivePrimitives::Context::mouseMoved);
 		ofAddListener(ofEvents().mouseDragged, this, &ofxInteractivePrimitives::Context::mouseDragged);
+		
+		ofAddListener(ofEvents().keyPressed, this, &ofxInteractivePrimitives::Context::keyPressed);
+		ofAddListener(ofEvents().keyReleased, this, &ofxInteractivePrimitives::Context::keyReleased);
 	}
 	
 	void disableAllEvent()
@@ -56,6 +60,9 @@ public:
 		ofRemoveListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
 		ofRemoveListener(ofEvents().mouseMoved, this, &ofxInteractivePrimitives::Context::mouseMoved);
 		ofRemoveListener(ofEvents().mouseDragged, this, &ofxInteractivePrimitives::Context::mouseDragged);
+		
+		ofRemoveListener(ofEvents().keyPressed, this, &ofxInteractivePrimitives::Context::keyPressed);
+		ofRemoveListener(ofEvents().keyReleased, this, &ofxInteractivePrimitives::Context::keyReleased);
 	}
 	
 	void prepare()
@@ -225,7 +232,7 @@ public:
 		for (int i = 0; i < elements.size(); i++)
 		{
 			ofxInteractivePrimitives *e = elements[i];
-			e->hover = false;
+			e->clearState();
 		}
 
 		vector<Selection> p = pickup(e.x, e.y);
@@ -246,11 +253,22 @@ public:
 				w->hover = true;
 				w->down = true;
 				
-				current_responder = w;
+				current_object = w;
+				
+				focusWillLost(focus_object);
+				focus_object = w;
 			}
 		}
+		else
+		{
+			current_object = NULL;
+			
+			focusWillLost(focus_object);
+			focus_object = NULL;
+		}
 		
-		if (p.empty()) current_responder = NULL;
+		if (focus_object)
+			focus_object->focus = true;
 	}
 	
 	void mouseReleased(ofMouseEventArgs &e)
@@ -258,9 +276,12 @@ public:
 		for (int i = 0; i < elements.size(); i++)
 		{
 			ofxInteractivePrimitives *e = elements[i];
-			e->hover = false;
+			e->clearState();
 		}
 		
+		if (focus_object)
+			focus_object->focus = true;
+
 		vector<Selection> p = pickup(e.x, e.y);
 		
 		if (!p.empty())
@@ -279,10 +300,10 @@ public:
 			}
 		}
 		
-		if (current_responder)
+		if (current_object)
 		{
-			current_responder->down = false;
-			current_responder = NULL;
+			current_object->down = false;
+			current_object = NULL;
 		}
 	}
 	
@@ -291,9 +312,12 @@ public:
 		for (int i = 0; i < elements.size(); i++)
 		{
 			ofxInteractivePrimitives *e = elements[i];
-			e->hover = false;
+			e->clearState();
 		}
 		
+		if (focus_object)
+			focus_object->focus = true;
+
 		vector<Selection> p = pickup(e.x, e.y);
 		
 		if (!p.empty())
@@ -312,10 +336,10 @@ public:
 			}
 		}
 		
-		if (current_responder)
+		if (current_object)
 		{
-			current_responder->down = false;
-			current_responder = NULL;
+			current_object->down = false;
+			current_object = NULL;
 		}
 	}
 	
@@ -324,42 +348,57 @@ public:
 		for (int i = 0; i < elements.size(); i++)
 		{
 			ofxInteractivePrimitives *e = elements[i];
-			e->hover = false;
+			e->clearState();
 		}
 		
-		bool forcus_is_out = true;
-		
-		if (!current_responder)
-		{
-			vector<Selection> p = pickup(e.x, e.y);
-			
-			if (!p.empty())
-			{
-				Selection &s = p[0];
-				current_depth = (float)s.min_depth / 0xffffffff;
-				
-				for (int i = 0; i < s.name_stack.size(); i++)
-				{
-					ofxInteractivePrimitives *w = elements[s.name_stack.at(i)];
-					ofVec3f p = getLocalPosition(e.x, e.y);
-					p = w->getGlobalTransformMatrix().getInverse().preMult(p);
-					
-					w->mouseDragged(p.x, p.y, e.button);
-					w->hover = true;
-					
-					if (w == current_responder) forcus_is_out = false;
-				}
-			}
-		}
-		
-		if (forcus_is_out && current_responder)
+		if (focus_object)
+			focus_object->focus = true;
+
+		if (current_object)
 		{
 			ofVec3f p = getLocalPosition(e.x, e.y);
-			p = current_responder->getGlobalTransformMatrix().getInverse().preMult(p);
+			p = current_object->getGlobalTransformMatrix().getInverse().preMult(p);
 			
-			current_responder->mouseDragged(p.x, p.y, e.button);
-			current_responder->hover = true;
+			current_object->mouseDragged(p.x, p.y, e.button);
+			current_object->hover = true;
 		}
+	}
+	
+	map<int, bool> current_focus_key;
+	void keyPressed(ofKeyEventArgs &e)
+	{
+		if (focus_object)
+		{
+			current_focus_key[e.key] = true;
+			focus_object->keyPressed(e.key);
+		}
+	}
+	
+	void keyReleased(ofKeyEventArgs &e)
+	{
+		if (focus_object)
+		{
+			current_focus_key[e.key] = false;
+			focus_object->keyReleased(e.key);
+		}
+	}
+	
+	void focusWillLost(ofxInteractivePrimitives *p)
+	{
+		// cleanup keys
+		
+		map<int, bool>::iterator it = current_focus_key.begin();
+		while (it != current_focus_key.end())
+		{
+			if (it->second)
+			{
+				p->keyReleased(it->first);
+			}
+			
+			it++;
+		}
+		
+		current_focus_key.clear();
 	}
 };
 
@@ -393,16 +432,12 @@ ofVec2f ofxInteractivePrimitives::getMouseDelta()
 
 ofVec3f ofxInteractivePrimitives::localToGlobal(const ofVec3f& v)
 {
-	// TODO: cache matrix
-	ofMatrix4x4 m = getGlobalTransformMatrix();
-	return m.preMult(v);
+	return global_matrix.preMult(v);
 }
 
 ofVec3f ofxInteractivePrimitives::globalToLocal(const ofVec3f& v)
 {
-	// TODO: cache matrix
-	ofMatrix4x4 m = getGlobalTransformMatrix().getInverse();
-	return m.preMult(v);
+	return global_matrix_inverse.preMult(v);
 }
 
 void ofxInteractivePrimitives::setParent(ofxInteractivePrimitives *o)
@@ -424,6 +459,12 @@ void ofxInteractivePrimitives::clearParent()
 	}
 	
 	ofNode::clearParent();
+}
+
+void ofxInteractivePrimitives::clearState()
+{
+	hover = false;
+	focus = false;
 }
 
 void ofxInteractivePrimitives::draw(const Internal &)
@@ -453,6 +494,9 @@ void ofxInteractivePrimitives::update(const Internal &)
 	
 	if (getVisible())
 	{
+		global_matrix = getGlobalTransformMatrix();
+		global_matrix_inverse = global_matrix.getInverse();
+		
 		update();
 		
 		for (int i = 0; i < children.size(); i++)
@@ -490,7 +534,6 @@ void ofxInteractivePrimitivesRoot::draw()
 	ofPopStyle();
 	glPopMatrix();
 	glPopAttrib();
-
 }
 
 void ofxInteractivePrimitivesRoot::update()

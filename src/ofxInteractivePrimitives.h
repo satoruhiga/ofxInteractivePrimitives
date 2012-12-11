@@ -27,19 +27,22 @@ public:
 	virtual void mouseMoved(int x, int y) {}
 	virtual void mouseDragged(int x, int y, int button) {}
 	
-	// TODO: key events
-	// virtual void keyPressed(int key) {}
-	// virtual void keyReleased(int key) {}
+	virtual void keyPressed(int key) {}
+	virtual void keyReleased(int key) {}
 	
 	void setParent(ofxInteractivePrimitives *o);
 	ofxInteractivePrimitives* getParent() { return (ofxInteractivePrimitives*)ofNode::getParent(); }
 	void clearParent();
 	
-	void setVisible(bool v) { visible = v; }
-	bool getVisible() { return visible; }
+	inline void setVisible(bool v) { visible = v; }
+	inline bool getVisible() const { return visible; }
+	inline bool isVisible() const { return visible; }
 	
-	bool isHover() { return hover; }
-	bool isDown() { return down; }
+	inline bool isHover() const { return hover; }
+	inline bool isDown() const { return down; }
+	
+	inline bool isFocus() const { return focus; }
+	inline bool hasFocus() const { return focus; }
 	
 	// utils
 	ofVec2f getMouseDelta();
@@ -56,9 +59,13 @@ protected:
 private:
 	
 	unsigned int object_id;
-	bool hover, down, visible;
+	bool hover, down, visible, focus;
+	
+	ofMatrix4x4 global_matrix, global_matrix_inverse;
 	
 	vector<ofxInteractivePrimitives*> children;
+	
+	void clearState();
 	
 };
 
