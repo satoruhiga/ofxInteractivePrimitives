@@ -2,11 +2,11 @@
 
 #include "ofMain.h"
 
-class ofxInteractivePrimitivesRoot;
+class ofxInteractivePrimitivesRootNode;
 
 class ofxInteractivePrimitives : public ofNode
 {
-	friend class ofxInteractivePrimitivesRoot;
+	friend class ofxInteractivePrimitivesRootNode;
 	
 public:
 	
@@ -29,10 +29,14 @@ public:
 	
 	virtual void keyPressed(int key) {}
 	virtual void keyReleased(int key) {}
+
+	//
 	
 	void setParent(ofxInteractivePrimitives *o);
 	ofxInteractivePrimitives* getParent() { return (ofxInteractivePrimitives*)ofNode::getParent(); }
 	void clearParent();
+	
+	//
 	
 	inline void setVisible(bool v) { visible = v; }
 	inline bool getVisible() const { return visible; }
@@ -45,8 +49,8 @@ public:
 	inline bool hasFocus() const { return focus; }
 	
 	// utils
-	ofVec2f getMouseDelta();
 	
+	ofVec2f getMouseDelta();
 	ofVec3f localToGlobal(const ofVec3f& v);
 	ofVec3f globalToLocal(const ofVec3f& v);
 	
@@ -62,14 +66,13 @@ private:
 	bool hover, down, visible, focus;
 	
 	ofMatrix4x4 global_matrix, global_matrix_inverse;
-	
 	vector<ofxInteractivePrimitives*> children;
 	
 	void clearState();
 	
 };
 
-class ofxInteractivePrimitivesRoot : public ofxInteractivePrimitives
+class ofxInteractivePrimitivesRootNode : public ofxInteractivePrimitives
 {
 public:
 	

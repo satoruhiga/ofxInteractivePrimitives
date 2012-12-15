@@ -410,7 +410,7 @@ static ofxInteractivePrimitives::Context& getContext()
 	return *_context;
 }
 
-ofxInteractivePrimitives::ofxInteractivePrimitives() : object_id(0), hover(false), down(false), visible(true)
+ofxInteractivePrimitives::ofxInteractivePrimitives() : object_id(0), hover(false), down(false), visible(true), focus(false)
 {
 	getContext().registerElement(this);
 }
@@ -507,7 +507,7 @@ void ofxInteractivePrimitives::update(const Internal &)
 	}
 }
 
-void ofxInteractivePrimitivesRoot::draw()
+void ofxInteractivePrimitivesRootNode::draw()
 {
 	ofxInteractivePrimitives::prepareModelViewMatrix();
 	
@@ -536,7 +536,7 @@ void ofxInteractivePrimitivesRoot::draw()
 	glPopAttrib();
 }
 
-void ofxInteractivePrimitivesRoot::update()
+void ofxInteractivePrimitivesRootNode::update()
 {
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPushMatrix();

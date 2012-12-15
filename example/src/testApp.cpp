@@ -6,9 +6,13 @@ class MyRect : public ofxInteractivePrimitives
 {
 public:
 	
+	string my_string;
+	
 	MyRect()
 	{
 		setPosition(ofRandomWidth(), ofRandomHeight(), 0);
+		
+		my_string = "drag me";
 	}
 	
 	void update()
@@ -21,6 +25,14 @@ public:
 	
 	void draw()
 	{
+		ofNoFill();
+		
+		if (isFocus())
+		{
+			ofRect(-10, -10, 120, 120);
+			ofDrawBitmapString("I am focused object.\nyou can change my text", 120, 15);
+		}
+
 		if (isHover())
 			ofFill();
 		else
@@ -34,7 +46,8 @@ public:
 		ofRect(0, 0, 100, 100);
 		
 		ofSetColor(0, 255, 0);
-		ofDrawBitmapString("drag me", 5, 15);
+		
+		ofDrawBitmapString(my_string, 5, 15);
 	}
 	
 	void hittest()
@@ -55,10 +68,28 @@ public:
 		
 		move(d);
 	}
+	
+	void keyPressed(int key)
+	{
+		if ((key == OF_KEY_BACKSPACE || key == OF_KEY_DEL)
+			&& !my_string.empty())
+		{
+			my_string = my_string.substr(0, my_string.size() - 1);
+		}
+		
+		if (key == OF_KEY_RETURN)
+		{
+			my_string += "\n";
+		}
+		else if (isprint(key))
+		{
+			my_string += key;
+		}
+	}
 };
 
 vector<MyRect*> rects;
-ofxInteractivePrimitivesRoot root;
+ofxInteractivePrimitivesRootNode root;
 
 //--------------------------------------------------------------
 void testApp::setup()
