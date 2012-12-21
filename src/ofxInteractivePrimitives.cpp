@@ -208,46 +208,6 @@ public:
 
 	// event callbacks
 
-	void draw(ofEventArgs&)
-	{
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		glPushMatrix();
-		ofPushStyle();
-
-		for (int i = 0; i < elements.size(); i++)
-		{
-			Node *w = elements[i];
-			if (!w->getVisible()) continue;
-
-			w->transformGL();
-			w->draw();
-			w->restoreTransformGL();
-		}
-
-		ofPopStyle();
-		glPopMatrix();
-		glPopAttrib();
-	}
-
-	void update(ofEventArgs&)
-	{
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		glPushMatrix();
-		ofPushStyle();
-
-		for (int i = 0; i < elements.size(); i++)
-		{
-			Node *w = elements[i];
-			if (!w->getVisible()) continue;
-
-			elements[i]->update();
-		}
-
-		ofPopStyle();
-		glPopMatrix();
-		glPopAttrib();
-	}
-
 	void mousePressed(ofMouseEventArgs &e)
 	{
 		for (int i = 0; i < elements.size(); i++)
@@ -423,14 +383,6 @@ public:
 	}
 };
 
-static Context *_context = NULL;
-static Context& getContext()
-{
-	if (_context == NULL)
-		_context = new Context;
-	return *_context;
-}
-
 Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false)
 {
 }
@@ -559,6 +511,10 @@ RootNode::~RootNode()
 
 void RootNode::draw()
 {
+	// follow-up when forgot update
+	if (last_update_time != ofGetElapsedTimef())
+		update();
+	
 	getContext()->prepare();
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -606,6 +562,8 @@ void RootNode::update()
 	ofPopStyle();
 	glPopMatrix();
 	glPopAttrib();
+	
+	last_update_time = ofGetElapsedTimef();
 }
 
 Context* RootNode::getContext()

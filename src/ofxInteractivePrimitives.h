@@ -34,7 +34,7 @@ public:
 	//
 
 	void setParent(Node *o);
-	Node*getParent() { return (Node*)ofNode::getParent(); }
+	Node* getParent() { return (Node*)ofNode::getParent(); }
 	void clearParent();
 
 	//
@@ -90,11 +90,12 @@ public:
 
 protected:
 
-	Context*getContext();
+	Context* getContext();
 
 private:
 
 	Context *context;
+	float last_update_time;
 };
 
 }
