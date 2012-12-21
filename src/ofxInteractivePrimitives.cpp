@@ -7,7 +7,8 @@ class Context
 {
 public:
 
-	vector<Node*> elements;
+	typedef map<unsigned int, Node*> ElemetsContainer;
+	ElemetsContainer elements;
 
 	GLint viewport[4];
 	GLdouble projection[16], modelview[16];
@@ -15,7 +16,7 @@ public:
 	ofMatrix4x4 modelViewProjectionMatrix;
 	ofMatrix4x4 modelViewProjectionMatrixInverse;
 
-	unsigned long current_object_id;
+	unsigned int current_object_id;
 	float current_depth;
 
 	Node *current_object;
@@ -33,14 +34,18 @@ public:
 
 	void registerElement(Node *o)
 	{
-		// TODO: error check
-		elements.push_back(o);
+		assert(o->object_id == 0);
+		
 		o->object_id = current_object_id++;
+		elements[o->object_id] = o;
 	}
 
 	void unregisterElement(Node *o)
 	{
-		elements.erase(remove(elements.begin(), elements.end(), o), elements.end());
+		if (o == current_object) current_object = NULL;
+		if (o == focus_object) focus_object = NULL;
+
+		elements.erase(o->object_id);
 	}
 
 	void enableAllEvent()
@@ -98,16 +103,21 @@ public:
 
 	void hittest()
 	{
-		for (int i = 0; i < elements.size(); i++)
+		ElemetsContainer::iterator it = elements.begin();
+		while (it != elements.end())
 		{
-			Node *e = elements[i];
-			if (!e->getVisible()) continue;
+			Node *e = it->second;
+			
+			if (e->getVisible() && e->getEnable())
+			{
+				e->transformGL();
+				glPushName(e->object_id);
+				e->hittest();
+				glPopName();
+				e->restoreTransformGL();
+			}
 
-			e->transformGL();
-			glPushName(e->object_id);
-			e->hittest();
-			glPopName();
-			e->restoreTransformGL();
+			it++;
 		}
 	}
 
@@ -210,10 +220,11 @@ public:
 
 	void mousePressed(ofMouseEventArgs &e)
 	{
-		for (int i = 0; i < elements.size(); i++)
+		ElemetsContainer::iterator it = elements.begin();
+		while (it != elements.end())
 		{
-			Node *e = elements[i];
-			e->clearState();
+			it->second->clearState();
+			it++;
 		}
 
 		vector<Selection> p = pickup(e.x, e.y);
@@ -225,11 +236,16 @@ public:
 
 			for (int i = 0; i < s.name_stack.size(); i++)
 			{
-				Node *w = elements[s.name_stack.at(i)];
+				GLuint oid = s.name_stack.at(i);
+				
+				ElemetsContainer::iterator it = elements.find(oid);
+				if (it == elements.end()) continue;
+				
+				Node *w = it->second;
+				if (w == NULL) continue;
+				
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
-
-				w->mousePressed(p.x, p.y, e.button);
 
 				w->hover = true;
 				w->down = true;
@@ -238,6 +254,8 @@ public:
 
 				focusWillLost(focus_object);
 				focus_object = w;
+				
+				w->mousePressed(p.x, p.y, e.button);
 			}
 		}
 		else
@@ -254,10 +272,11 @@ public:
 
 	void mouseReleased(ofMouseEventArgs &e)
 	{
-		for (int i = 0; i < elements.size(); i++)
+		ElemetsContainer::iterator it = elements.begin();
+		while (it != elements.end())
 		{
-			Node *e = elements[i];
-			e->clearState();
+			it->second->clearState();
+			it++;
 		}
 
 		if (focus_object)
@@ -276,8 +295,8 @@ public:
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 
-				w->mouseReleased(p.x, p.y, e.button);
 				w->hover = true;
+				w->mouseReleased(p.x, p.y, e.button);
 			}
 		}
 
@@ -290,10 +309,11 @@ public:
 
 	void mouseMoved(ofMouseEventArgs &e)
 	{
-		for (int i = 0; i < elements.size(); i++)
+		ElemetsContainer::iterator it = elements.begin();
+		while (it != elements.end())
 		{
-			Node *e = elements[i];
-			e->clearState();
+			it->second->clearState();
+			it++;
 		}
 
 		if (focus_object)
@@ -312,8 +332,8 @@ public:
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 
-				w->mouseMoved(p.x, p.y);
 				w->hover = true;
+				w->mouseMoved(p.x, p.y);
 			}
 		}
 
@@ -326,10 +346,11 @@ public:
 
 	void mouseDragged(ofMouseEventArgs &e)
 	{
-		for (int i = 0; i < elements.size(); i++)
+		ElemetsContainer::iterator it = elements.begin();
+		while (it != elements.end())
 		{
-			Node *e = elements[i];
-			e->clearState();
+			it->second->clearState();
+			it++;
 		}
 
 		if (focus_object)
@@ -340,8 +361,8 @@ public:
 			ofVec3f p = getLocalPosition(e.x, e.y);
 			p = current_object->getGlobalTransformMatrix().getInverse().preMult(p);
 
-			current_object->mouseDragged(p.x, p.y, e.button);
 			current_object->hover = true;
+			current_object->mouseDragged(p.x, p.y, e.button);
 		}
 	}
 
@@ -383,7 +404,7 @@ public:
 	}
 };
 
-Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false)
+Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false), enable(true)
 {
 }
 
@@ -429,6 +450,8 @@ void Node::setParent(Node *o)
 
 void Node::clearParent()
 {
+	getContext()->unregisterElement(this);
+	
 	Node *p = getParent();
 	if (p)
 	{
@@ -440,8 +463,6 @@ void Node::clearParent()
 	}
 
 	ofNode::clearParent();
-
-	getContext()->unregisterElement(this);
 }
 
 void Node::clearState()

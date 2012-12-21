@@ -36,6 +36,8 @@ public:
 	void setParent(Node *o);
 	Node* getParent() { return (Node*)ofNode::getParent(); }
 	void clearParent();
+	
+	vector<Node*> getChildren() { return children; }
 
 	//
 
@@ -48,6 +50,11 @@ public:
 
 	inline bool isFocus() const { return focus; }
 	inline bool hasFocus() const { return focus; }
+	
+	inline void setEnable(bool v) { enable = v; }
+	inline bool getEnable() { return enable; }
+	inline bool isEnable() { return enable; }
+	
 
 	// utils
 
@@ -69,7 +76,7 @@ protected:
 private:
 
 	unsigned int object_id;
-	bool hover, down, visible, focus;
+	bool hover, down, focus, visible, enable;
 
 	ofMatrix4x4 global_matrix, global_matrix_inverse;
 	vector<Node*> children;
