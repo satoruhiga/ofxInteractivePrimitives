@@ -2,7 +2,7 @@
 
 #include "ofxInteractivePrimitives.h"
 
-class MyRect : public ofxInteractivePrimitives
+class MyRect : public ofxInteractivePrimitives::Node
 {
 public:
 	
@@ -89,7 +89,7 @@ public:
 };
 
 vector<MyRect*> rects;
-ofxInteractivePrimitivesRootNode root;
+ofxInteractivePrimitives::RootNode root;
 
 //--------------------------------------------------------------
 void testApp::setup()

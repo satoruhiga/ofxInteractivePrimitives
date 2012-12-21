@@ -1,21 +1,27 @@
 #include "ofxInteractivePrimitives.h"
 
-class ofxInteractivePrimitives::Context
+namespace ofxInteractivePrimitives
+{
+
+class Context
 {
 public:
 	
-	vector<ofxInteractivePrimitives*> elements;
+	vector<Node*> elements;
 	
 	GLint viewport[4];
 	GLdouble projection[16], modelview[16];
 	
+	ofMatrix4x4 modelViewProjectionMatrix;
+	ofMatrix4x4 modelViewProjectionMatrixInverse;
+	
 	unsigned long current_object_id;
 	float current_depth;
 	
-	ofxInteractivePrimitives *current_object;
-	ofxInteractivePrimitives *focus_object;
+	Node *current_object;
+	Node *focus_object;
 
-	Context() : current_object_id(0), current_depth(0), current_object(NULL)
+	Context() : current_object_id(0), current_depth(0), focus_object(NULL), current_object(NULL)
 	{
 		enableAllEvent();
 	}
@@ -25,44 +31,38 @@ public:
 		disableAllEvent();
 	}
 	
-	void registerElement(ofxInteractivePrimitives *o)
+	void registerElement(Node *o)
 	{
 		// TODO: error check
 		elements.push_back(o);
 		o->object_id = current_object_id++;
 	}
 	
-	void unregisterElement(ofxInteractivePrimitives *o)
+	void unregisterElement(Node *o)
 	{
 		elements.erase(remove(elements.begin(), elements.end(), o), elements.end());
 	}
 	
 	void enableAllEvent()
 	{
-//		ofAddListener(ofEvents().update, this, &ofxInteractivePrimitives::Context::update);
-//		ofAddListener(ofEvents().draw, this, &ofxInteractivePrimitives::Context::draw);
+		ofAddListener(ofEvents().mousePressed, this, &Context::mousePressed);
+		ofAddListener(ofEvents().mouseReleased, this, &Context::mouseReleased);
+		ofAddListener(ofEvents().mouseMoved, this, &Context::mouseMoved);
+		ofAddListener(ofEvents().mouseDragged, this, &Context::mouseDragged);
 		
-		ofAddListener(ofEvents().mousePressed, this, &ofxInteractivePrimitives::Context::mousePressed);
-		ofAddListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
-		ofAddListener(ofEvents().mouseMoved, this, &ofxInteractivePrimitives::Context::mouseMoved);
-		ofAddListener(ofEvents().mouseDragged, this, &ofxInteractivePrimitives::Context::mouseDragged);
-		
-		ofAddListener(ofEvents().keyPressed, this, &ofxInteractivePrimitives::Context::keyPressed);
-		ofAddListener(ofEvents().keyReleased, this, &ofxInteractivePrimitives::Context::keyReleased);
+		ofAddListener(ofEvents().keyPressed, this, &Context::keyPressed);
+		ofAddListener(ofEvents().keyReleased, this, &Context::keyReleased);
 	}
 	
 	void disableAllEvent()
 	{
-//		ofRemoveListener(ofEvents().update, this, &ofxInteractivePrimitives::Context::update);
-//		ofRemoveListener(ofEvents().draw, this, &ofxInteractivePrimitives::Context::draw);
+		ofRemoveListener(ofEvents().mousePressed, this, &Context::mousePressed);
+		ofRemoveListener(ofEvents().mouseReleased, this, &Context::mouseReleased);
+		ofRemoveListener(ofEvents().mouseMoved, this, &Context::mouseMoved);
+		ofRemoveListener(ofEvents().mouseDragged, this, &Context::mouseDragged);
 		
-		ofRemoveListener(ofEvents().mousePressed, this, &ofxInteractivePrimitives::Context::mousePressed);
-		ofRemoveListener(ofEvents().mouseReleased, this, &ofxInteractivePrimitives::Context::mouseReleased);
-		ofRemoveListener(ofEvents().mouseMoved, this, &ofxInteractivePrimitives::Context::mouseMoved);
-		ofRemoveListener(ofEvents().mouseDragged, this, &ofxInteractivePrimitives::Context::mouseDragged);
-		
-		ofRemoveListener(ofEvents().keyPressed, this, &ofxInteractivePrimitives::Context::keyPressed);
-		ofRemoveListener(ofEvents().keyReleased, this, &ofxInteractivePrimitives::Context::keyReleased);
+		ofRemoveListener(ofEvents().keyPressed, this, &Context::keyPressed);
+		ofRemoveListener(ofEvents().keyReleased, this, &Context::keyReleased);
 	}
 	
 	void prepare()
@@ -72,11 +72,35 @@ public:
 		glGetIntegerv(GL_VIEWPORT, viewport);
 	}
 	
+	ofVec3f screenToWorld(const ofVec2f &p)
+	{
+		double x, y, z;
+		
+		gluUnProject(p.x, viewport[3] - p.y, current_depth,
+				   modelview, projection, viewport,
+				   &x, &y, &z);
+		
+		return ofVec3f(x, y, z);
+	}
+	
+	ofVec2f worldToScreen(const ofVec3f &p)
+	{
+		double x, y, z;
+		
+		gluProject(p.x, p.y, p.z,
+				   modelview, projection, viewport,
+				   &x, &y, &z);
+		
+		y = viewport[3] - y;
+		
+		return ofVec2f(x, y);
+	}
+	
 	void hittest()
 	{
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *e = elements[i];
+			Node *e = elements[i];
 			if (!e->getVisible()) continue;
 			
 			e->transformGL();
@@ -187,15 +211,13 @@ public:
 	
 	void draw(ofEventArgs&)
 	{
-		ofxInteractivePrimitives::prepareModelViewMatrix();
-		
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glPushMatrix();
 		ofPushStyle();
 		
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *w = elements[i];
+			Node *w = elements[i];
 			if (!w->getVisible()) continue;
 			
 			w->transformGL();
@@ -216,7 +238,7 @@ public:
 		
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *w = elements[i];
+			Node *w = elements[i];
 			if (!w->getVisible()) continue;
 			
 			elements[i]->update();
@@ -231,7 +253,7 @@ public:
 	{
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *e = elements[i];
+			Node *e = elements[i];
 			e->clearState();
 		}
 
@@ -244,7 +266,7 @@ public:
 			
 			for (int i = 0; i < s.name_stack.size(); i++)
 			{
-				ofxInteractivePrimitives *w = elements[s.name_stack.at(i)];
+				Node *w = elements[s.name_stack.at(i)];
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 				
@@ -275,7 +297,7 @@ public:
 	{
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *e = elements[i];
+			Node *e = elements[i];
 			e->clearState();
 		}
 		
@@ -291,7 +313,7 @@ public:
 			
 			for (int i = 0; i < s.name_stack.size(); i++)
 			{
-				ofxInteractivePrimitives *w = elements[s.name_stack.at(i)];
+				Node *w = elements[s.name_stack.at(i)];
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 				
@@ -311,7 +333,7 @@ public:
 	{
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *e = elements[i];
+			Node *e = elements[i];
 			e->clearState();
 		}
 		
@@ -327,7 +349,7 @@ public:
 			
 			for (int i = 0; i < s.name_stack.size(); i++)
 			{
-				ofxInteractivePrimitives *w = elements[s.name_stack.at(i)];
+				Node *w = elements[s.name_stack.at(i)];
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 				
@@ -347,7 +369,7 @@ public:
 	{
 		for (int i = 0; i < elements.size(); i++)
 		{
-			ofxInteractivePrimitives *e = elements[i];
+			Node *e = elements[i];
 			e->clearState();
 		}
 		
@@ -383,7 +405,7 @@ public:
 		}
 	}
 	
-	void focusWillLost(ofxInteractivePrimitives *p)
+	void focusWillLost(Node *p)
 	{
 		// cleanup keys
 		
@@ -402,72 +424,89 @@ public:
 	}
 };
 
-static ofxInteractivePrimitives::Context *_context = NULL;
-static ofxInteractivePrimitives::Context& getContext()
+static Context *_context = NULL;
+static Context& getContext()
 {
 	if (_context == NULL)
-		_context = new ofxInteractivePrimitives::Context;
+		_context = new Context;
 	return *_context;
 }
 
-ofxInteractivePrimitives::ofxInteractivePrimitives() : object_id(0), hover(false), down(false), visible(true), focus(false)
+Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false)
 {
-	getContext().registerElement(this);
 }
 
-ofxInteractivePrimitives::~ofxInteractivePrimitives()
+Node::~Node()
 {
-	getContext().unregisterElement(this);
 }
 
-void ofxInteractivePrimitives::prepareModelViewMatrix()
-{
-	getContext().prepare();
-}
-
-ofVec2f ofxInteractivePrimitives::getMouseDelta()
+ofVec2f Node::getMouseDelta()
 {
 	return ofVec2f(ofGetMouseX() - ofGetPreviousMouseX(), ofGetMouseY() - ofGetPreviousMouseY());
 }
 
-ofVec3f ofxInteractivePrimitives::localToGlobal(const ofVec3f& v)
+ofVec3f Node::localToGlobalPos(const ofVec3f& v)
 {
 	return global_matrix.preMult(v);
 }
 
-ofVec3f ofxInteractivePrimitives::globalToLocal(const ofVec3f& v)
+ofVec3f Node::globalToLocalPos(const ofVec3f& v)
 {
 	return global_matrix_inverse.preMult(v);
 }
 
-void ofxInteractivePrimitives::setParent(ofxInteractivePrimitives *o)
+ofVec3f Node::screenToWorld(const ofVec2f& v)
 {
-	ofNode::setParent(*o);
-	o->children.push_back(this);
+	return getContext()->screenToWorld(v);
 }
 
-void ofxInteractivePrimitives::clearParent()
+ofVec2f Node::worldToScreen(const ofVec3f& v)
 {
-	ofxInteractivePrimitives *p = getParent();
+	return getContext()->worldToScreen(v);
+}
+
+void Node::setParent(Node *o)
+{
+	if (getParent())
+		clearParent();
+		
+	ofNode::setParent(*o);
+	o->children.push_back(this);
+	
+	getContext()->registerElement(this);
+}
+
+void Node::clearParent()
+{
+	Node *p = getParent();
 	if (p)
 	{
-		vector<ofxInteractivePrimitives*> &p_children = p->children;
-		vector<ofxInteractivePrimitives*>::iterator it;
+		vector<Node*> &p_children = p->children;
+		vector<Node*>::iterator it;
 		
 		it = remove(p_children.begin(), p_children.end(), this);
 		p_children.erase(it, p_children.end());
 	}
 	
 	ofNode::clearParent();
+	
+	getContext()->unregisterElement(this);
 }
 
-void ofxInteractivePrimitives::clearState()
+void Node::clearState()
 {
 	hover = false;
 	focus = false;
 }
 
-void ofxInteractivePrimitives::draw(const Internal &)
+Context* Node::getContext()
+{
+	Node *p = getParent();
+	if (p) return p->getContext();
+	else return NULL;
+}
+
+void Node::draw(const Internal &)
 {
 	static Internal intn;
 	
@@ -488,7 +527,7 @@ void ofxInteractivePrimitives::draw(const Internal &)
 	}
 }
 
-void ofxInteractivePrimitives::update(const Internal &)
+void Node::update(const Internal &)
 {
 	static Internal intn;
 	
@@ -507,9 +546,21 @@ void ofxInteractivePrimitives::update(const Internal &)
 	}
 }
 
-void ofxInteractivePrimitivesRootNode::draw()
+// RootNode
+
+RootNode::RootNode() : context(new Context)
 {
-	ofxInteractivePrimitives::prepareModelViewMatrix();
+}
+
+RootNode::~RootNode()
+{
+	delete context;
+	context = NULL;
+}
+
+void RootNode::draw()
+{
+	getContext()->prepare();
 	
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPushMatrix();
@@ -536,7 +587,7 @@ void ofxInteractivePrimitivesRootNode::draw()
 	glPopAttrib();
 }
 
-void ofxInteractivePrimitivesRootNode::update()
+void RootNode::update()
 {
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPushMatrix();
@@ -556,4 +607,11 @@ void ofxInteractivePrimitivesRootNode::update()
 	ofPopStyle();
 	glPopMatrix();
 	glPopAttrib();
+}
+
+Context* RootNode::getContext()
+{
+	return context;
+}
+
 }

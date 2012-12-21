@@ -2,21 +2,22 @@
 
 #include "ofMain.h"
 
-class ofxInteractivePrimitivesRootNode;
-
-class ofxInteractivePrimitives : public ofNode
+namespace ofxInteractivePrimitives
 {
-	friend class ofxInteractivePrimitivesRootNode;
+
+class Context;
+class RootNode;
+
+class Node : public ofNode
+{
+	friend class RootNode;
 	
 public:
 	
-	class Context;
 	friend class Context;
 	
-	static void prepareModelViewMatrix();
-	
-	ofxInteractivePrimitives();
-	virtual ~ofxInteractivePrimitives();
+	Node();
+	virtual ~Node();
 	
 	virtual void update() {}
 	virtual void draw() {}
@@ -29,11 +30,11 @@ public:
 	
 	virtual void keyPressed(int key) {}
 	virtual void keyReleased(int key) {}
-
+	
 	//
 	
-	void setParent(ofxInteractivePrimitives *o);
-	ofxInteractivePrimitives* getParent() { return (ofxInteractivePrimitives*)ofNode::getParent(); }
+	void setParent(Node *o);
+	Node* getParent() { return (Node*)ofNode::getParent(); }
 	void clearParent();
 	
 	//
@@ -51,8 +52,11 @@ public:
 	// utils
 	
 	ofVec2f getMouseDelta();
-	ofVec3f localToGlobal(const ofVec3f& v);
-	ofVec3f globalToLocal(const ofVec3f& v);
+	ofVec3f localToGlobalPos(const ofVec3f& v);
+	ofVec3f globalToLocalPos(const ofVec3f& v);
+	
+	ofVec3f screenToWorld(const ofVec2f& v);
+	ofVec2f worldToScreen(const ofVec3f& v);
 	
 protected:
 	
@@ -60,23 +64,38 @@ protected:
 	void draw(const Internal &);
 	void update(const Internal &);
 	
+	virtual Context* getContext();
+	
 private:
 	
 	unsigned int object_id;
 	bool hover, down, visible, focus;
 	
 	ofMatrix4x4 global_matrix, global_matrix_inverse;
-	vector<ofxInteractivePrimitives*> children;
+	vector<Node*> children;
 	
 	void clearState();
 	
 };
 
-class ofxInteractivePrimitivesRootNode : public ofxInteractivePrimitives
+class RootNode : public Node
 {
 public:
+	
+	RootNode();
+	~RootNode();
 	
 	void draw();
 	void update();
 	
+protected:
+	
+	Context* getContext();
+	
+private:
+	
+	Context *context;
 };
+
+	
+}
