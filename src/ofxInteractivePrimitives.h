@@ -102,7 +102,6 @@ protected:
 private:
 
 	Context *context;
-	float last_update_time;
 };
 
 }

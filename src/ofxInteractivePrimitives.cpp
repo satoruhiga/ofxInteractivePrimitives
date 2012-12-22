@@ -21,6 +21,8 @@ public:
 
 	Node *current_object;
 	Node *focus_object;
+	
+	float last_update_time;
 
 	Context() : current_object_id(0), current_depth(0), focus_object(NULL), current_object(NULL)
 	{
@@ -76,6 +78,13 @@ public:
 		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
 		glGetIntegerv(GL_VIEWPORT, viewport);
 	}
+	
+	void update()
+	{
+		last_update_time = ofGetElapsedTimef();
+	}
+	
+	float getLastUpdateTime() { return last_update_time; }
 
 	ofVec3f screenToWorld(const ofVec2f &p)
 	{
@@ -104,6 +113,7 @@ public:
 	void hittest()
 	{
 		ElemetsContainer::iterator it = elements.begin();
+		
 		while (it != elements.end())
 		{
 			Node *e = it->second;
@@ -134,6 +144,12 @@ public:
 
 	vector<Selection> pickup(int x, int y)
 	{
+		// hittest timeout
+		if (ofGetElapsedTimef() - last_update_time > 0.1)
+		{
+			return vector<Selection>();
+		}
+		
 		const int BUFSIZE = 256;
 		GLuint selectBuf[BUFSIZE];
 		GLint hits;
@@ -533,7 +549,7 @@ RootNode::~RootNode()
 void RootNode::draw()
 {
 	// follow-up when forgot update
-	if (last_update_time != ofGetElapsedTimef())
+	if (getContext()->getLastUpdateTime() != ofGetElapsedTimef())
 		update();
 	
 	getContext()->prepare();
@@ -565,6 +581,8 @@ void RootNode::draw()
 
 void RootNode::update()
 {
+	getContext()->update();
+	
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPushMatrix();
 	ofPushStyle();
@@ -583,8 +601,6 @@ void RootNode::update()
 	ofPopStyle();
 	glPopMatrix();
 	glPopAttrib();
-	
-	last_update_time = ofGetElapsedTimef();
 }
 
 Context* RootNode::getContext()
