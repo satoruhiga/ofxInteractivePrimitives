@@ -71,7 +71,8 @@ protected:
 	void draw(const Internal &);
 	void update(const Internal &);
 
-	virtual Context*getContext();
+	virtual Context* getContext();
+	const vector<GLuint>& getCurrentNameStack();
 
 private:
 
@@ -94,6 +95,8 @@ public:
 
 	void draw();
 	void update();
+	
+	bool hasFocusdObject();
 
 protected:
 
