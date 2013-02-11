@@ -1,9 +1,8 @@
 #include "ofxInteractivePrimitives.h"
 
-namespace ofxInteractivePrimitives
-{
+using namespace ofxInteractivePrimitives;
 
-class Context
+class ofxInteractivePrimitives::Context
 {
 public:
 
@@ -21,6 +20,8 @@ public:
 
 	Node *current_object;
 	Node *focus_object;
+	
+	vector<GLuint> current_name_stack;
 	
 	float last_update_time;
 
@@ -168,7 +169,7 @@ public:
 		glPushMatrix();
 		{
 			glLoadIdentity();
-			gluPickMatrix(x, viewport[3] - y, 1.0, 1.0, viewport);
+			gluPickMatrix(x, viewport[3] - y, 5.0, 5.0, viewport);
 			glMultMatrixd(projection);
 
 			glMatrixMode(GL_MODELVIEW);
@@ -249,17 +250,19 @@ public:
 		{
 			Selection &s = p[0];
 			current_depth = (float)s.min_depth / 0xffffffff;
-
-			for (int i = 0; i < s.name_stack.size(); i++)
+			
+			if (s.name_stack.size())
 			{
-				GLuint oid = s.name_stack.at(i);
+				GLuint oid = s.name_stack.at(0);
+				
+				current_name_stack.assign(s.name_stack.begin() + 1, s.name_stack.end());
 				
 				ElemetsContainer::iterator it = elements.find(oid);
-				if (it == elements.end()) continue;
-				
+				if (it == elements.end()) goto __end__;
+
 				Node *w = it->second;
-				if (w == NULL) continue;
-				
+				if (w == NULL) goto __end__;
+
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 
@@ -273,6 +276,8 @@ public:
 				
 				w->mousePressed(p.x, p.y, e.button);
 			}
+			
+			__end__:;
 		}
 		else
 		{
@@ -280,6 +285,8 @@ public:
 
 			focusWillLost(focus_object);
 			focus_object = NULL;
+			
+			current_name_stack.clear();
 		}
 
 		if (focus_object)
@@ -305,9 +312,9 @@ public:
 			Selection &s = p[0];
 			current_depth = (float)s.min_depth / 0xffffffff;
 
-			for (int i = 0; i < s.name_stack.size(); i++)
+			if (s.name_stack.size())
 			{
-				Node *w = elements[s.name_stack.at(i)];
+				Node *w = elements[s.name_stack.at(0)];
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 
@@ -318,9 +325,15 @@ public:
 
 		if (current_object)
 		{
+			ofVec3f p = getLocalPosition(e.x, e.y);
+			p = current_object->getGlobalTransformMatrix().getInverse().preMult(p);
+
+			current_object->mouseReleased(p.x, p.y, e.button);
 			current_object->down = false;
 			current_object = NULL;
 		}
+		
+		current_name_stack.clear();
 	}
 
 	void mouseMoved(ofMouseEventArgs &e)
@@ -342,9 +355,12 @@ public:
 			Selection &s = p[0];
 			current_depth = (float)s.min_depth / 0xffffffff;
 
-			for (int i = 0; i < s.name_stack.size(); i++)
+			if (s.name_stack.size())
 			{
-				Node *w = elements[s.name_stack.at(i)];
+				Node *w = elements[s.name_stack.at(0)];
+				
+				current_name_stack.assign(s.name_stack.begin() + 1, s.name_stack.end());
+
 				ofVec3f p = getLocalPosition(e.x, e.y);
 				p = w->getGlobalTransformMatrix().getInverse().preMult(p);
 
@@ -352,11 +368,17 @@ public:
 				w->mouseMoved(p.x, p.y);
 			}
 		}
+		else
+		{
+			current_name_stack.clear();
+		}
 
 		if (current_object)
 		{
 			current_object->down = false;
 			current_object = NULL;
+			
+			current_name_stack.clear();
 		}
 	}
 
@@ -431,6 +453,11 @@ Node::~Node()
 ofVec2f Node::getMouseDelta()
 {
 	return ofVec2f(ofGetMouseX() - ofGetPreviousMouseX(), ofGetMouseY() - ofGetPreviousMouseY());
+}
+	
+const vector<GLuint>& Node::getCurrentNameStack()
+{
+	return getContext()->current_name_stack;
 }
 
 ofVec3f Node::localToGlobalPos(const ofVec3f& v)
@@ -533,7 +560,7 @@ void Node::update(const Internal &)
 		}
 	}
 }
-
+	
 // RootNode
 
 RootNode::RootNode() : context(new Context)
@@ -608,4 +635,7 @@ Context* RootNode::getContext()
 	return context;
 }
 
+bool RootNode::hasFocusdObject()
+{
+	return context->focus_object != NULL;
 }
