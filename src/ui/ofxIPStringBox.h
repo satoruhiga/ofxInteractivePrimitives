@@ -65,6 +65,7 @@ public:
 
 		max_w = max(max_w, w);
 
+		rect.y = -1;
 		rect.width = max_w * BITMAP_CHAR_WIDTH;
 		rect.height = h * BITMAP_CHAR_HEIGHT + (h - 1) * BITMAP_CHAR_NEWLINE_HEIGHT;
 
