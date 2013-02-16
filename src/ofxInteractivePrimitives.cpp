@@ -1,5 +1,7 @@
 #include "ofxInteractivePrimitives.h"
 
+#include <assert.h>
+
 using namespace ofxInteractivePrimitives;
 
 class ofxInteractivePrimitives::Context
