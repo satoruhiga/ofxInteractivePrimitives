@@ -75,6 +75,8 @@ public:
 
 	const string& getText() const { return text; }
 
+	const ofRectangle& getRect() const { return rect; }
+	
 protected:
 
 	string text;

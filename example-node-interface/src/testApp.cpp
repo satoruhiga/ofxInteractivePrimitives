@@ -121,8 +121,13 @@ class ofxInteractivePrimitives::PatchCord : public Node, public DelayedDeletable
 	
 public:
 	
-	PatchCord(Port &upstream_port, Port &downstream_port);
+	PatchCord(Port *port);
+	PatchCord(Port *upstream_port, Port *downstream_port);
 	~PatchCord() { disconnect(); }
+	
+	bool isValid() const { return upstream && downstream; }
+	
+	bool setAnotherPort(Port *port);
 	
 	Port* getUpstream() const { return upstream; }
 	Port* getDownstream() const { return downstream; }
@@ -142,9 +147,14 @@ class ofxInteractivePrimitives::Port
 	
 public:
 	
-	Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction) : patcher(patcher), index(index), direction(direction) {}
+	Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction);
 	
 	void execute(MessageRef message);
+	
+	void draw()
+	{
+		ofRect(rect);
+	}
 	
 	void addCord(PatchCord *cord)
 	{
@@ -155,6 +165,10 @@ public:
 	{
 		cords.erase(cord);
 	}
+	
+	PortIdentifer::Direction getDirection() const { return direction; }
+	
+	ofVec3f getCenter() const { return rect.getCenter(); }
 	
 protected:
 	
@@ -168,6 +182,8 @@ protected:
 	// data
 	MessageRef data;
 	
+	ofRectangle rect;
+	
 };
 
 
@@ -177,7 +193,7 @@ class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::S
 	
 public:
 	
-	BasePatcher(RootNode &root) : StringBox(root) {}
+	BasePatcher(RootNode &root) : StringBox(root), patching_port(NULL) {}
 	
 	void draw()
 	{
@@ -185,24 +201,19 @@ public:
 		
 		ofFill();
 		
+		for (int i = 0; i < getNumInput(); i++)
 		{
-			int offset_x = -1;
-			
-			for (int i = 0; i < getNumInput(); i++)
-			{
-				ofRect(offset_x, -5, 10, 4);
-				offset_x += 14;
-			}
+			getInputPort(i).draw();
+		}
+
+		for (int i = 0; i < getNumOutput(); i++)
+		{
+			getOutputPort(i).draw();
 		}
 		
+		if (patching_port)
 		{
-			int offset_x = -1;
-			
-			for (int i = 0; i < getNumOutput(); i++)
-			{
-				ofRect(offset_x, rect.height - 1, 10, 4);
-				offset_x += 14;
-			}
+			ofLine(patching_port->getCenter(), globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
 		}
 	}
 	
@@ -210,33 +221,77 @@ public:
 	{
 		StringBox::hittest();
 		
+		ofFill();
+		
+		pushID(0);
+		
 		{
-			int offset_x = -1;
-			
 			for (int i = 0; i < getNumInput(); i++)
 			{
-				ofRect(offset_x, -5, 10, 4);
-				offset_x += 14;
+				pushID(i);
+				getInputPort(i).draw();
+				popID();
 			}
 		}
 		
+		popID();
+		
+		pushID(1);
+		
 		{
-			int offset_x = -1;
-			
 			for (int i = 0; i < getNumOutput(); i++)
 			{
-				ofRect(offset_x, rect.height - 1, 10, 4);
-				offset_x += 14;
+				pushID(i);
+				getOutputPort(i).draw();
+				popID();
 			}
 		}
+		
+		popID();
 
 	}
 	
 	void mouseDragged(int x, int y, int button)
 	{
-		move(getMouseDelta());
+		if (!patching_port)
+		{
+			move(getMouseDelta());
+		}
 	}
 
+	void mousePressed(int x, int y, int button)
+	{
+		const vector<GLuint>& names = getCurrentNameStack();
+		
+		if (names.size() == 2)
+		{
+			if (names[0] == 0)
+			{
+				patching_port = &getInputPort(names[1]);
+			}
+			else if (names[0] == 1)
+			{
+				patching_port = &getOutputPort(names[1]);
+			}
+			else
+			{
+				assert(false);
+			}
+			
+			// create new patchcode
+		}
+		else
+		{
+			StringBox::mousePressed(x, y, button);
+		}
+	}
+	
+	void mouseReleased(int x, int y, int button)
+	{
+		cout << "rel" << endl;
+		
+		patching_port = NULL;
+	}
 	
 	virtual const char* getName() const { return ""; }
 	
@@ -250,6 +305,9 @@ protected:
 
 	void setupPatcher()
 	{
+		// NOTICE: do not create Port before setText
+		setText(getName());
+		
 		for (int i = 0; i < getNumInput(); i++)
 		{
 			input_port.push_back(Port(this, i, PortIdentifer::INPUT));
@@ -259,12 +317,11 @@ protected:
 		{
 			output_port.push_back(Port(this, i, PortIdentifer::OUTPUT));
 		}
-		
-		setText(getName());
 	}
 
 protected:
 	
+	Port *patching_port;
 	vector<MessageRef> input_data, output_data;
 	
 	virtual void inputDataUpdated(int index) {}
@@ -338,8 +395,10 @@ private:
 
 using namespace ofxInteractivePrimitives;
 
-PatchCord::PatchCord(Port &upstream_port, Port &downstream_port)
-: upstream(&upstream_port), downstream(&downstream_port)
+// PatchCord
+
+PatchCord::PatchCord(Port *upstream_port, Port *downstream_port)
+: upstream(upstream_port), downstream(downstream_port)
 {
 	getUpstream()->addCord(this);
 	getDownstream()->addCord(this);
@@ -351,6 +410,61 @@ void PatchCord::disconnect()
 	getDownstream()->removeCord(this);
 	
 //	delayedDelete();
+}
+
+PatchCord::PatchCord(Port *port)
+{
+	if (port->getDirection() == PortIdentifer::INPUT)
+	{
+		upstream = port;
+	}
+	else if (port->getDirection() == PortIdentifer::OUTPUT)
+	{
+		downstream = port;
+	}
+	else
+	{
+		assert(false);
+	}
+}
+
+// Port
+
+Port::Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction) : patcher(patcher), index(index), direction(direction)
+{
+	if (direction == PortIdentifer::INPUT)
+	{
+		rect.x = 14 * index;
+		rect.y = -5;
+	}
+	else if (direction == PortIdentifer::OUTPUT)
+	{
+		rect.x = 14 * index;
+		rect.y = patcher->getRect().height;
+	}
+	else
+	{
+		assert(false);
+	}
+	
+	rect.width = 10;
+	rect.height = 4;
+}
+
+bool PatchCord::setAnotherPort(Port *port)
+{
+	if (port->getDirection() == PortIdentifer::INPUT && downstream)
+	{
+		upstream = port;
+		return true;
+	}
+	else if (port->getDirection() == PortIdentifer::OUTPUT && upstream)
+	{
+		downstream = port;
+		return true;
+	}
+	
+	return false;
 }
 
 void Port::execute(MessageRef message)
@@ -495,7 +609,7 @@ void testApp::setup()
 	node1 = new Patcher<PrintClassWrapper>(root);
 	
 	// node0 -> node1
-	cord = new PatchCord(node0->getOutputPort(0), node1->getInputPort(0));
+	cord = new PatchCord(&node0->getOutputPort(0), &node1->getInputPort(0));
 	
 	node0->execute();
 	

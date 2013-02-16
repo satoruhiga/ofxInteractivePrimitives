@@ -78,6 +78,8 @@ protected:
 	inline void pushID(int id) { glPushName(id); }
 	inline void popID() { glPopName(); }
 
+	void cancelFocus();
+	
 private:
 
 	unsigned int object_id;

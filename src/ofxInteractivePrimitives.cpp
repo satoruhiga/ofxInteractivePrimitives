@@ -442,6 +442,23 @@ public:
 
 		current_focus_key.clear();
 	}
+	
+	void setFocus(Node *o)
+	{
+		assert(o);
+		current_object = o;
+		focus_object = o;
+		focus_object->focus = true;
+	}
+	
+	void clearFocus()
+	{
+		if (!current_object) return;
+		if (!focus_object) return;
+		focus_object->focus = false;
+		focus_object= NULL;
+		current_object = NULL;
+	}
 };
 
 Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false), enable(true)
@@ -562,7 +579,12 @@ void Node::update(const Internal &)
 		}
 	}
 }
-	
+
+void Node::cancelFocus()
+{
+	getContext()->clearFocus();
+}
+
 // RootNode
 
 RootNode::RootNode() : context(new Context)
