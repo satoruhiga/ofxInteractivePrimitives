@@ -1,9 +1,10 @@
 #include "ofxInteractivePrimitives.h"
 
-namespace ofxInteractivePrimitives
-{
+#include <assert.h>
 
-class Context
+using namespace ofxInteractivePrimitives;
+
+class ofxInteractivePrimitives::Context
 {
 public:
 
@@ -286,6 +287,8 @@ public:
 
 			focusWillLost(focus_object);
 			focus_object = NULL;
+			
+			current_name_stack.clear();
 		}
 
 		if (focus_object)
@@ -324,6 +327,10 @@ public:
 
 		if (current_object)
 		{
+			ofVec3f p = getLocalPosition(e.x, e.y);
+			p = current_object->getGlobalTransformMatrix().getInverse().preMult(p);
+
+			current_object->mouseReleased(p.x, p.y, e.button);
 			current_object->down = false;
 			current_object = NULL;
 		}
@@ -363,11 +370,17 @@ public:
 				w->mouseMoved(p.x, p.y);
 			}
 		}
+		else
+		{
+			current_name_stack.clear();
+		}
 
 		if (current_object)
 		{
 			current_object->down = false;
 			current_object = NULL;
+			
+			current_name_stack.clear();
 		}
 	}
 
@@ -549,7 +562,7 @@ void Node::update(const Internal &)
 		}
 	}
 }
-
+	
 // RootNode
 
 RootNode::RootNode() : context(new Context)
@@ -627,6 +640,4 @@ Context* RootNode::getContext()
 bool RootNode::hasFocusdObject()
 {
 	return context->focus_object != NULL;
-}
-	
 }

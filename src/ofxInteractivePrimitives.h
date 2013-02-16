@@ -4,11 +4,12 @@
 
 namespace ofxInteractivePrimitives
 {
+	class Context;
+	class Node;
+	class RootNode;
+}
 
-class Context;
-class RootNode;
-
-class Node : public ofNode
+class ofxInteractivePrimitives::Node : public ofNode
 {
 	friend class RootNode;
 
@@ -73,6 +74,9 @@ protected:
 
 	virtual Context* getContext();
 	const vector<GLuint>& getCurrentNameStack();
+	
+	inline void pushID(int id) { glPushName(id); }
+	inline void popID() { glPopName(); }
 
 private:
 
@@ -86,7 +90,7 @@ private:
 
 };
 
-class RootNode : public Node
+class ofxInteractivePrimitives::RootNode : public ofxInteractivePrimitives::Node
 {
 public:
 
@@ -106,5 +110,3 @@ private:
 
 	Context *context;
 };
-
-}
