@@ -121,18 +121,17 @@ class ofxInteractivePrimitives::PatchCord : public Node, public DelayedDeletable
 	
 public:
 	
-	PatchCord(Port *port);
 	PatchCord(Port *upstream_port, Port *downstream_port);
 	~PatchCord() { disconnect(); }
 	
 	bool isValid() const { return upstream && downstream; }
 	
-	bool setAnotherPort(Port *port);
-	
 	Port* getUpstream() const { return upstream; }
 	Port* getDownstream() const { return downstream; }
 	
 	void disconnect();
+	
+	void draw();
 	
 protected:
 	
@@ -154,6 +153,17 @@ public:
 	void draw()
 	{
 		ofRect(rect);
+		
+		if (direction == PortIdentifer::OUTPUT)
+		{
+			CordContainerType::iterator it = cords.begin();
+			while (it != cords.end())
+			{
+				PatchCord *o = *it;
+				o->draw();
+				it++;
+			}
+		}
 	}
 	
 	void addCord(PatchCord *cord)
@@ -168,7 +178,10 @@ public:
 	
 	PortIdentifer::Direction getDirection() const { return direction; }
 	
-	ofVec3f getCenter() const { return rect.getCenter(); }
+	ofVec3f getPos() const { return rect.getCenter(); }
+	ofVec3f getGlobalPos() const;
+	
+	BasePatcher* getPatcher() const { return patcher; }
 	
 protected:
 	
@@ -193,7 +206,7 @@ class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::S
 	
 public:
 	
-	BasePatcher(RootNode &root) : StringBox(root), patching_port(NULL) {}
+	BasePatcher(RootNode &root) : StringBox(root) {}
 	
 	void draw()
 	{
@@ -211,9 +224,9 @@ public:
 			getOutputPort(i).draw();
 		}
 		
-		if (patching_port)
+		if (patching_port && patching_port->getPatcher() == this)
 		{
-			ofLine(patching_port->getCenter(), globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
+			ofLine(patching_port->getPos(), globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
 		}
 	}
 	
@@ -277,8 +290,6 @@ public:
 			{
 				assert(false);
 			}
-			
-			// create new patchcode
 		}
 		else
 		{
@@ -288,7 +299,28 @@ public:
 	
 	void mouseReleased(int x, int y, int button)
 	{
-		cout << "rel" << endl;
+		if (patching_port)
+		{
+			const vector<GLuint>& names = getCurrentNameStack();
+			
+			if (names.size() == 2)
+			{
+				cout << names[0] << " " << names[1] << endl;
+				
+				if (names[0] == 1 && in_range((size_t)names[1], (size_t)0, (size_t)getNumInput()))
+				{
+					new PatchCord(patching_port, &getInputPort(names[1]));
+				}
+				else if (names[0] == 0 && in_range((size_t)names[1], (size_t)0, (size_t)getNumOutput()))
+				{
+					new PatchCord(&getOutputPort(names[1]), patching_port);
+				}
+				else
+				{
+					assert(false);
+				}
+			}
+		}
 		
 		patching_port = NULL;
 	}
@@ -321,7 +353,8 @@ protected:
 
 protected:
 	
-	Port *patching_port;
+	static Port *patching_port;
+	
 	vector<MessageRef> input_data, output_data;
 	
 	virtual void inputDataUpdated(int index) {}
@@ -330,6 +363,8 @@ private:
 	
 	vector<Port> input_port, output_port;
 };
+
+ofxInteractivePrimitives::Port* ofxInteractivePrimitives::BasePatcher::patching_port = NULL;
 
 
 template <typename T>
@@ -412,20 +447,14 @@ void PatchCord::disconnect()
 //	delayedDelete();
 }
 
-PatchCord::PatchCord(Port *port)
+void PatchCord::draw()
 {
-	if (port->getDirection() == PortIdentifer::INPUT)
-	{
-		upstream = port;
-	}
-	else if (port->getDirection() == PortIdentifer::OUTPUT)
-	{
-		downstream = port;
-	}
-	else
-	{
-		assert(false);
-	}
+	if (!isValid()) return;
+	
+	const ofVec3f p0 = getUpstream()->getPos();
+	const ofVec3f p1 = getUpstream()->getPatcher()->globalToLocalPos(getDownstream()->getGlobalPos());
+	
+	ofLine(p0, p1);
 }
 
 // Port
@@ -451,22 +480,6 @@ Port::Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction) 
 	rect.height = 4;
 }
 
-bool PatchCord::setAnotherPort(Port *port)
-{
-	if (port->getDirection() == PortIdentifer::INPUT && downstream)
-	{
-		upstream = port;
-		return true;
-	}
-	else if (port->getDirection() == PortIdentifer::OUTPUT && upstream)
-	{
-		downstream = port;
-		return true;
-	}
-	
-	return false;
-}
-
 void Port::execute(MessageRef message)
 {
 	if (direction == PortIdentifer::INPUT)
@@ -490,6 +503,11 @@ void Port::execute(MessageRef message)
 			it++;
 		}
 	}
+}
+
+ofVec3f Port::getGlobalPos() const
+{
+	return patcher->localToGlobalPos(getPos());
 }
 
 //
@@ -609,7 +627,7 @@ void testApp::setup()
 	node1 = new Patcher<PrintClassWrapper>(root);
 	
 	// node0 -> node1
-	cord = new PatchCord(&node0->getOutputPort(0), &node1->getInputPort(0));
+//	cord = new PatchCord(&node0->getOutputPort(0), &node1->getInputPort(0));
 	
 	node0->execute();
 	
