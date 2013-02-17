@@ -109,8 +109,7 @@ struct PrintClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 };
 
 Patcher<TestClassWrapper> *node0;
-Patcher<PrintClassWrapper> *node1;
-PatchCord *cord;
+Patcher<PrintClassWrapper> *node1, *node2;
 
 //--------------------------------------------------------------
 void testApp::setup()
@@ -122,13 +121,11 @@ void testApp::setup()
 
 	node0 = new Patcher<TestClassWrapper>(root);
 	node1 = new Patcher<PrintClassWrapper>(root);
-
-	// node0 -> node1
-//	cord = new PatchCord(&node0->getOutputPort(0), &node1->getInputPort(0));
-
+	node2 = new Patcher<PrintClassWrapper>(root);
 
 	node0->setPosition(200, 200, 0);
 	node1->setPosition(200, 300, 0);
+	node2->setPosition(300, 300, 0);
 }
 
 //--------------------------------------------------------------
@@ -142,6 +139,8 @@ void testApp::update()
 //--------------------------------------------------------------
 void testApp::draw()
 {
+	ofEnableAlphaBlending();
+	
 	ofSetColor(255);
 
 	root.draw();

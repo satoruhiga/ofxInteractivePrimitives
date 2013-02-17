@@ -8,6 +8,8 @@ PatchCord::PatchCord(Port *upstream_port, Port *downstream_port) : upstream(upst
 {
 	getUpstream()->addCord(this);
 	getDownstream()->addCord(this);
+	
+	setParent(upstream_port->getPatcher()->getUIElement());
 }
 
 void PatchCord::disconnect()
@@ -15,6 +17,7 @@ void PatchCord::disconnect()
 	getUpstream()->removeCord(this);
 	getDownstream()->removeCord(this);
 	
+	dispose();
 	delayedDelete();
 }
 
@@ -24,10 +27,39 @@ void PatchCord::draw()
 	
 	const ofVec3f p0 = getUpstream()->getPos();
 	const ofVec3f p1 = getUpstream()->getPatcher()->globalToLocalPos(getDownstream()->getGlobalPos());
+
+	ofPushStyle();
 	
-	// cout << p0 << " / " << p1 << endl;
-	cout << getDownstream()->getPatcher()->getPosition() << endl;
+	if (this->isHover())
+		ofSetLineWidth(2);
+	else
+		ofSetLineWidth(1);
+	
+	if (this->isFocus())
+		ofSetColor(ofColor::fromHex(0xCCFF77), 127);
+
 	ofLine(p0, p1);
+	
+	ofPopStyle();
+}
+
+void PatchCord::hittest()
+{
+	if (!isValid()) return;
+	
+	const ofVec3f p0 = getUpstream()->getPos();
+	const ofVec3f p1 = getUpstream()->getPatcher()->globalToLocalPos(getDownstream()->getGlobalPos());
+	
+	ofSetLineWidth(3);
+	ofLine(p0, p1);
+}
+
+void PatchCord::keyPressed(int key)
+{
+	if (key == OF_KEY_DEL || key == OF_KEY_BACKSPACE)
+	{
+		delayedDelete();
+	}
 }
 
 // Port

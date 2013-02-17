@@ -21,6 +21,8 @@ public:
 
 	Node();
 	virtual ~Node();
+	
+	void dispose();
 
 	virtual void update() {}
 	virtual void draw() {}
@@ -41,7 +43,7 @@ public:
 	void clearParent();
 	
 	vector<Node*> getChildren() { return children; }
-
+	
 	//
 
 	inline void setVisible(bool v) { visible = v; }

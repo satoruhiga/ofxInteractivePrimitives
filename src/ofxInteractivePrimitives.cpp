@@ -451,11 +451,11 @@ public:
 	
 	void clearFocus()
 	{
-		if (!current_object) return;
-		if (!focus_object) return;
 		focus_object->focus = false;
 		focus_object= NULL;
 		current_object = NULL;
+		
+		current_focus_key.clear();
 	}
 };
 
@@ -465,6 +465,13 @@ Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(fal
 
 Node::~Node()
 {
+}
+
+void Node::dispose()
+{
+	cancelFocus();
+	clearState();
+	clearParent();
 }
 
 ofVec2f Node::getMouseDelta()

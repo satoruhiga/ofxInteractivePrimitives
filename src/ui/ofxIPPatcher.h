@@ -178,6 +178,9 @@ public:
 	void disconnect();
 	
 	void draw();
+	void hittest();
+	
+	void keyPressed(int key);
 	
 protected:
 	
@@ -201,17 +204,6 @@ public:
 	void draw()
 	{
 		ofRect(rect);
-		
-		if (direction == PortIdentifer::OUTPUT)
-		{
-			CordContainerType::iterator it = cords.begin();
-			while (it != cords.end())
-			{
-				PatchCord *o = *it;
-				o->draw();
-				it++;
-			}
-		}
 	}
 	
 	void hittest()
@@ -263,6 +255,8 @@ class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::D
 public:
 	
 	virtual void execute() {}
+	
+	virtual Element2D* getUIElement() = 0;
 	
 	virtual int getNumInput() const { return 0; }
 	virtual int getNumOutput() const { return 0; }
@@ -336,16 +330,28 @@ public:
 		
 		InteractivePrimitiveType::draw();
 		
-		ofNoFill();
-		
-		if (this->isHover())
 		{
+			ofPushStyle();
+			
+			if (this->isHover())
+				ofSetLineWidth(2);
+			else
+				ofSetLineWidth(1);
+			
+			if (this->isFocus())
+				ofSetColor(ofColor::fromHex(0xCCFF77), 127);
+
+			ofNoFill();
+			
 			ofRectangle r = this->getContentRect();
-			r.x -= 3;
-			r.y -= 3;
-			r.width += 6;
-			r.height += 6;
+			r.x -= 2;
+			r.y -= 2;
+			r.width += 4;
+			r.height += 4;
+			
 			ofRect(r);
+			
+			ofPopStyle();
 		}
 		
 		const vector<GLuint>& names = this->getCurrentNameStack();
@@ -473,12 +479,13 @@ public:
 					upstream = &getOutputPort(names[1]);
 					downstream = patching_port;
 				}
-				else assert(false);
+				else goto __cancel__;
 				
 				createPatchCord(upstream, downstream);
 			}
 		}
 		
+		__cancel__:;
 		patching_port = NULL;
 	}
 	
@@ -487,6 +494,8 @@ public:
 	ofVec3f localToGlobalPos(const ofVec3f& v) { return InteractivePrimitiveType::localToGlobalPos(v); }
 	ofVec3f globalToLocalPos(const ofVec3f& v) { return InteractivePrimitiveType::globalToLocalPos(v); }
 	ofVec3f getPosition() { return InteractivePrimitiveType::getPosition(); }
+	
+	Element2D* getUIElement() { return this; }
 	
 protected:
 	
