@@ -43,20 +43,38 @@ struct ofxInteractivePrimitives::DelayedDeletable
 {
 public:
 	
-	DelayedDeletable() : delayed_delete(false) {}
+	DelayedDeletable() : will_delete(false) {}
 	
 	void delayedDelete()
 	{
-		delayed_delete = true;
-		
-		// TODO: impl delayed delete
-		delete this;
+		will_delete = true;
+		addToDelayedDeleteQueue(this);
 	}
-	bool getDelayedDelete() { return delayed_delete; }
+	
+	static void addToDelayedDeleteQueue(DelayedDeletable *o) { getQueue().push(o); }
+	static void deleteQueue()
+	{
+		Queue &queue = getQueue();
+		while (queue.size())
+		{
+			DelayedDeletable *o = queue.front();
+			cout << "deleted: " << o << endl;
+			delete o;
+			queue.pop();
+		}
+	}
+	
+protected:
+	
+	bool getWillDelete() { return will_delete; }
 
 private:
 	
-	bool delayed_delete;
+	typedef std::queue<DelayedDeletable*> Queue;
+	
+	bool will_delete;
+	
+	static Queue& getQueue() { static Queue queue; return queue; }
 };
 
 
@@ -726,6 +744,8 @@ void testApp::setup()
 //--------------------------------------------------------------
 void testApp::update()
 {
+	ofxInteractivePrimitives::DelayedDeletable::deleteQueue();
+	
 	root.update();
 }
 
