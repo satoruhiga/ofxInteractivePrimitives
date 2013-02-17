@@ -95,7 +95,6 @@ struct PrintClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 	
 	static void update(BasePatcher *patcher)
 	{
-		patcher->execute();
 	}
 
 	static int getNumInput()

@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 
+#include <assert.h>
+
 namespace ofxInteractivePrimitives
 {
 	class Context;
