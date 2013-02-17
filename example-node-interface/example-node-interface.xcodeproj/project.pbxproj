@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		602FB89F163AA4EE00127C41 /* ofxInteractivePrimitives.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 602FB89D163AA4EE00127C41 /* ofxInteractivePrimitives.cpp */; };
+		60D4021E16D10C68005D6ACE /* ofxIPPatcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60D4021C16D10C68005D6ACE /* ofxIPPatcher.cpp */; };
 		BBAB23CB13894F3D00AA2426 /* GLUT.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBAB23BE13894E4700AA2426 /* GLUT.framework */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
 		E45BE97B0E8CC7DD009D7055 /* AGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E45BE9710E8CC7DD009D7055 /* AGL.framework */; };
@@ -77,6 +78,8 @@
 		600EFB6516C913B300A5B331 /* ofxIPStringBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxIPStringBox.h; sourceTree = "<group>"; };
 		602FB89D163AA4EE00127C41 /* ofxInteractivePrimitives.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ofxInteractivePrimitives.cpp; path = ../src/ofxInteractivePrimitives.cpp; sourceTree = "<group>"; };
 		602FB89E163AA4EE00127C41 /* ofxInteractivePrimitives.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ofxInteractivePrimitives.h; path = ../src/ofxInteractivePrimitives.h; sourceTree = "<group>"; };
+		60D4021C16D10C68005D6ACE /* ofxIPPatcher.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxIPPatcher.cpp; sourceTree = "<group>"; };
+		60D4021D16D10C68005D6ACE /* ofxIPPatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxIPPatcher.h; sourceTree = "<group>"; };
 		60EF104A16D0D11400A37B2A /* ofxIPBaseElement.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxIPBaseElement.h; sourceTree = "<group>"; };
 		BBAB23BE13894E4700AA2426 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = ../../../libs/glut/lib/osx/GLUT.framework; sourceTree = "<group>"; };
 		E4328143138ABC890047C5CB /* openFrameworksLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openFrameworksLib.xcodeproj; path = ../../../libs/openFrameworksCompiled/project/osx/openFrameworksLib.xcodeproj; sourceTree = SOURCE_ROOT; };
@@ -135,6 +138,8 @@
 		600EFB6216C913B300A5B331 /* ui */ = {
 			isa = PBXGroup;
 			children = (
+				60D4021C16D10C68005D6ACE /* ofxIPPatcher.cpp */,
+				60D4021D16D10C68005D6ACE /* ofxIPPatcher.h */,
 				60EF104A16D0D11400A37B2A /* ofxIPBaseElement.h */,
 				600EFB6316C913B300A5B331 /* ofxIPButton.h */,
 				600EFB6416C913B300A5B331 /* ofxIPMarker.h */,
@@ -329,6 +334,7 @@
 				E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */,
 				E4B69E210A3A1BDC003C02F2 /* testApp.cpp in Sources */,
 				602FB89F163AA4EE00127C41 /* ofxInteractivePrimitives.cpp in Sources */,
+				60D4021E16D10C68005D6ACE /* ofxIPPatcher.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
