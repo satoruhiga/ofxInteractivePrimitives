@@ -325,6 +325,8 @@ public:
 			}
 		}
 
+		current_name_stack.clear();
+		
 		if (current_object)
 		{
 			ofVec3f p = getLocalPosition(e.x, e.y);
@@ -334,8 +336,6 @@ public:
 			current_object->down = false;
 			current_object = NULL;
 		}
-		
-		current_name_stack.clear();
 	}
 
 	void mouseMoved(ofMouseEventArgs &e)

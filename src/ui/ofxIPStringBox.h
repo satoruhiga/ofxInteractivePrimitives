@@ -26,11 +26,14 @@ public:
 
 	void draw()
 	{
+		ofPushStyle();
+		
 		ofNoFill();
-		ofSetColor(0, 255, 0);
 		ofRect(rect);
 
 		ofDrawBitmapString(text, MARGIN, BITMAP_CHAR_HEIGHT + MARGIN);
+		
+		ofPopStyle();
 	}
 
 	void hittest()

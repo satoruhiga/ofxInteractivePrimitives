@@ -33,8 +33,7 @@ namespace ofxInteractivePrimitives
 		return (TypeID)&s;
 	};
 	
-	template <typename T>
-	bool in_range(const T& a, const T& b, const T& c)
+	bool in_range(const int& a, const int& b, const int& c)
 	{
 		return a >= b && a < c;
 	}
@@ -98,7 +97,6 @@ public:
 		Message<T> *ptr = new Message<T>(T());
 		return MessageRef(ptr);
 	}
-
 	
 private:
 	
@@ -166,6 +164,11 @@ public:
 		}
 	}
 	
+	void hittest()
+	{
+		ofRect(rect);
+	}
+	
 	void addCord(PatchCord *cord)
 	{
 		cords.insert(cord);
@@ -182,6 +185,8 @@ public:
 	ofVec3f getGlobalPos() const;
 	
 	BasePatcher* getPatcher() const { return patcher; }
+	
+	bool hasConnectTo(Port *port);
 	
 protected:
 	
@@ -210,7 +215,46 @@ public:
 	
 	void draw()
 	{
+		ofPushStyle();
+		
 		StringBox::draw();
+		
+		ofNoFill();
+		
+		if (isHover())
+		{
+			ofRectangle r = getRect();
+			r.x -= 3;
+			r.y -= 3;
+			r.width += 6;
+			r.height += 6;
+			ofRect(r);
+		}
+
+		const vector<GLuint>& names = getCurrentNameStack();
+		if (isHover() && names.size() == 2)
+		{
+			int index = names[1];
+			
+			ofVec3f p;
+			
+			if (names[0] == PortIdentifer::INPUT
+				&& in_range(names[1], 0, getNumInput()))
+			{
+				p = getInputPort(index).getPos();
+				p.y -= 1;
+			}
+			else if (names[0] == PortIdentifer::OUTPUT
+				&& in_range(names[1], 0, getNumOutput()))
+			{
+				p = getOutputPort(index).getPos();
+			}
+			else assert(false);
+			
+			ofRectangle r;
+			r.setFromCenter(p, 14, 8);
+			ofRect(r);
+		}
 		
 		ofFill();
 		
@@ -228,6 +272,8 @@ public:
 		{
 			ofLine(patching_port->getPos(), globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
 		}
+		
+		ofPopStyle();
 	}
 	
 	void hittest()
@@ -236,32 +282,29 @@ public:
 		
 		ofFill();
 		
-		pushID(0);
+		// input
+		pushID(PortIdentifer::INPUT);
 		
+		for (int i = 0; i < getNumInput(); i++)
 		{
-			for (int i = 0; i < getNumInput(); i++)
-			{
-				pushID(i);
-				getInputPort(i).draw();
-				popID();
-			}
+			pushID(i);
+			getInputPort(i).hittest();
+			popID();
 		}
 		
 		popID();
 		
-		pushID(1);
+		// output
+		pushID(PortIdentifer::OUTPUT);
 		
+		for (int i = 0; i < getNumOutput(); i++)
 		{
-			for (int i = 0; i < getNumOutput(); i++)
-			{
-				pushID(i);
-				getOutputPort(i).draw();
-				popID();
-			}
+			pushID(i);
+			getOutputPort(i).hittest();
+			popID();
 		}
 		
 		popID();
-
 	}
 	
 	void mouseDragged(int x, int y, int button)
@@ -278,11 +321,11 @@ public:
 		
 		if (names.size() == 2)
 		{
-			if (names[0] == 0)
+			if (names[0] == PortIdentifer::INPUT)
 			{
 				patching_port = &getInputPort(names[1]);
 			}
-			else if (names[0] == 1)
+			else if (names[0] == PortIdentifer::OUTPUT)
 			{
 				patching_port = &getOutputPort(names[1]);
 			}
@@ -305,19 +348,46 @@ public:
 			
 			if (names.size() == 2)
 			{
-				cout << names[0] << " " << names[1] << endl;
+				Port *upstream = NULL;
+				Port *downstream = NULL;
 				
-				if (names[0] == 1 && in_range((size_t)names[1], (size_t)0, (size_t)getNumInput()))
+				if (names[0] == PortIdentifer::OUTPUT
+					&& in_range(names[1], 0, getNumInput()))
 				{
+					upstream = patching_port;
+					downstream = &getInputPort(names[1]);
 					new PatchCord(patching_port, &getInputPort(names[1]));
 				}
-				else if (names[0] == 0 && in_range((size_t)names[1], (size_t)0, (size_t)getNumOutput()))
+				else if (names[0] == PortIdentifer::INPUT
+						 && in_range(names[1], 0, getNumOutput()))
 				{
+					upstream = &getOutputPort(names[1]);
+					downstream = patching_port;
+
 					new PatchCord(&getOutputPort(names[1]), patching_port);
 				}
 				else
 				{
 					assert(false);
+				}
+				
+				// patching validation
+				
+				// port is null
+				if (upstream == NULL || downstream == NULL) goto __cancel__;
+				
+				// already connected
+				if (upstream->hasConnectTo(downstream)) goto __cancel__;
+				
+				// patching oneself
+				if (upstream->getPatcher() == downstream->getPatcher()) goto __cancel__;
+				
+				
+				// create patchcord
+				new PatchCord(upstream, downstream);
+				
+				__cancel__: {
+					ofLogWarning("BasePatcher") << "patching failed";
 				}
 			}
 		}
@@ -401,7 +471,7 @@ public:
 			input_data[i] = input_port.data;
 		}
 		
-		T::execute(content, input_data, output_data);
+		T::execute(this, content, input_data, output_data);
 		
 		for (int i = 0; i < getNumOutput(); i++)
 		{
@@ -410,11 +480,16 @@ public:
 		}
 	}
 	
+	void update()
+	{
+		execute();
+		
+	}
+	
 protected:
 	
 	void inputDataUpdated(int index)
 	{
-		// cout << "input updated: " << index << endl;
 		execute();
 	}
 	
@@ -444,7 +519,7 @@ void PatchCord::disconnect()
 	getUpstream()->removeCord(this);
 	getDownstream()->removeCord(this);
 	
-//	delayedDelete();
+	delayedDelete();
 }
 
 void PatchCord::draw()
@@ -484,15 +559,11 @@ void Port::execute(MessageRef message)
 {
 	if (direction == PortIdentifer::INPUT)
 	{
-		cout << "set input data" << endl;
 		data = message;
-		
 		patcher->inputDataUpdated(index);
 	}
 	else if (direction == PortIdentifer::OUTPUT)
 	{
-		cout << "send message" << endl;
-		
 		CordContainerType::iterator it = cords.begin();
 		while (it != cords.end())
 		{
@@ -508,6 +579,21 @@ void Port::execute(MessageRef message)
 ofVec3f Port::getGlobalPos() const
 {
 	return patcher->localToGlobalPos(getPos());
+}
+
+bool Port::hasConnectTo(Port *port)
+{
+	CordContainerType::iterator it = cords.begin();
+	while (it != cords.end())
+	{
+		PatchCord *cord = *it;
+		Port *p = cord->getDownstream();
+		if (p == port) return true;
+		
+		it++;
+	}
+
+	return false;
 }
 
 //
@@ -533,26 +619,26 @@ struct TestClassWrapper
 	
 	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
 	{
-		input[0] = Message<int>::create(42);
-		output[0] = Message<int>::create(2000);
+		output[0] = Message<ofVec3f>::create(ofVec3f(0));
 		
 		return new TestClass;
 	}
 	
-	static void execute(ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
+	static void execute(BasePatcher *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
 	{
-		Message<int> *in0 = input[0]->cast<int>();
-		if (in0) context->test(in0->get());
+		
+		Message<ofVec3f> *out0 = output[0]->cast<ofVec3f>();
+		out0->set(patcher->getPosition());
 	}
 	
 	static int getNumInput()
 	{
-		return 1;
+		return 0;
 	}
 	
 	static TypeID getInputType(int index)
 	{
-		return Type2Int<int>();
+		return Type2Int<void>();
 	}
 	
 	static int getNumOutput()
@@ -562,7 +648,7 @@ struct TestClassWrapper
 	
 	static TypeID getOutputType(int index)
 	{
-		return Type2Int<int>();
+		return Type2Int<ofVec3f>();
 	}
 
 };
@@ -579,12 +665,14 @@ struct PrintClassWrapper
 		return NULL;
 	}
 	
-	static void execute(ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
+	static void execute(BasePatcher *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
 	{
-		Message<int> *in0 = input[0]->cast<int>();
+		Message<ofVec3f> *in0 = input[0]->cast<ofVec3f>();
 		if (in0)
 		{
-			printf("%i\n", in0->get());
+			stringstream ss;
+			ss << in0->get();
+			patcher->setText(ss.str());
 		}
 	}
 	
@@ -644,6 +732,8 @@ void testApp::update()
 //--------------------------------------------------------------
 void testApp::draw()
 {
+	ofSetColor(255);
+	
 	root.draw();
 }
 
