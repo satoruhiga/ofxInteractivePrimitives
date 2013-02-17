@@ -68,24 +68,26 @@ public:
 		will_delete = true;
 		
 		addToDelayedDeleteQueue(this);
-		//		delete this;
 	}
 	
 	static void deleteQueue()
 	{
 		Queue &queue = getQueue();
-		while (queue.size())
+		Queue::iterator it = queue.begin();
+		
+		while (it != queue.end())
 		{
-			DelayedDeletable *o = queue.front();
-			cout << "deleted: " << o << endl;
+			DelayedDeletable *o = *it;
 			delete o;
-			queue.pop();
+			it++;
 		}
+		
+		queue.clear();
 	}
 	
 protected:
 	
-	static void addToDelayedDeleteQueue(DelayedDeletable *o) { getQueue().push(o); }
+	static void addToDelayedDeleteQueue(DelayedDeletable *o) { getQueue().insert(o); }
 	
 protected:
 	
@@ -93,7 +95,7 @@ protected:
 	
 private:
 	
-	typedef std::queue<DelayedDeletable*> Queue;
+	typedef std::set<DelayedDeletable*> Queue;
 	static Queue& getQueue() { static Queue queue; return queue; }
 	
 	bool will_delete;
@@ -168,14 +170,14 @@ class ofxInteractivePrimitives::PatchCord : public Node, public DelayedDeletable
 public:
 	
 	PatchCord(Port *upstream_port, Port *downstream_port);
-	~PatchCord() { disconnect(); }
+	~PatchCord() {}
+
+	void disconnect();
 	
 	bool isValid() const { return upstream && downstream; }
 	
 	Port* getUpstream() const { return upstream; }
 	Port* getDownstream() const { return downstream; }
-	
-	void disconnect();
 	
 	void draw();
 	void hittest();
@@ -198,6 +200,10 @@ class ofxInteractivePrimitives::Port
 public:
 	
 	Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction);
+	~Port()
+	{
+		cords.clear();
+	}
 	
 	void execute(MessageRef message);
 	
@@ -219,6 +225,19 @@ public:
 	void removeCord(PatchCord *cord)
 	{
 		cords.erase(cord);
+	}
+	
+	void disconnectAll()
+	{
+		CordContainerType t = cords;
+		CordContainerType::iterator it = t.begin();
+		while (it != t.end())
+		{
+			PatchCord *c = *it;
+			c->disconnect();
+			it++;
+		}
+		cords.clear();
 	}
 	
 	PortIdentifer::Direction getDirection() const { return direction; }
@@ -290,6 +309,19 @@ public:
 		setupPatcher();
 		
 		content = (ContextType*)T::create(input_data, output_data);
+	}
+	
+	~Patcher()
+	{
+		this->dispose();
+	}
+	
+	void dispose()
+	{
+		input_data.clear();
+		output_data.clear();
+
+		InteractivePrimitiveType::dispose();
 	}
 	
 	int getNumInput() const { return T::getNumInput(); }
@@ -489,6 +521,15 @@ public:
 		patching_port = NULL;
 	}
 	
+	void keyPressed(int key)
+	{
+		if (key == OF_KEY_DEL || key == OF_KEY_BACKSPACE)
+		{
+			disposePatchCords();
+			delayedDelete();
+		}
+	}
+	
 	//
 	
 	ofVec3f localToGlobalPos(const ofVec3f& v) { return InteractivePrimitiveType::localToGlobalPos(v); }
@@ -498,6 +539,20 @@ public:
 	Element2D* getUIElement() { return this; }
 	
 protected:
+	
+	void disposePatchCords()
+	{
+		struct disconnect
+		{
+			void operator()(Port &o)
+			{
+				o.disconnectAll();
+			}
+		};
+		
+		for_each(input_port.begin(), input_port.end(), disconnect());
+		for_each(output_port.begin(), output_port.end(), disconnect());
+	}
 	
 	void inputDataUpdated(int index)
 	{

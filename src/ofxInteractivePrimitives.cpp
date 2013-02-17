@@ -451,9 +451,16 @@ public:
 	
 	void clearFocus()
 	{
-		focus_object->focus = false;
-		focus_object= NULL;
-		current_object = NULL;
+		if (focus_object)
+		{
+			focus_object->focus = false;
+			focus_object= NULL;
+		}
+		
+		if (current_object)
+		{
+			current_object = NULL;
+		}
 		
 		current_focus_key.clear();
 	}

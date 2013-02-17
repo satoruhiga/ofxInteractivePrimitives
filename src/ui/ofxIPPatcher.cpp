@@ -58,6 +58,7 @@ void PatchCord::keyPressed(int key)
 {
 	if (key == OF_KEY_DEL || key == OF_KEY_BACKSPACE)
 	{
+		disconnect();
 		delayedDelete();
 	}
 }

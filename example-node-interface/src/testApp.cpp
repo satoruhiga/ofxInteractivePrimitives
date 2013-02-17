@@ -62,7 +62,6 @@ struct TestClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 	{
 		return Type2Int<ofVec3f>();
 	}
-
 };
 
 struct PrintClassWrapper : public ofxInteractivePrimitives::BaseWrapper
@@ -114,7 +113,6 @@ Patcher<PrintClassWrapper> *node1, *node2;
 //--------------------------------------------------------------
 void testApp::setup()
 {
-
 	ofSetFrameRate(60);
 	ofSetVerticalSync(true);
 	ofBackground(0);

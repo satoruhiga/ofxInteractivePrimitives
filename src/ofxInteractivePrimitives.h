@@ -22,7 +22,7 @@ public:
 	Node();
 	virtual ~Node();
 	
-	void dispose();
+	virtual void dispose();
 
 	virtual void update() {}
 	virtual void draw() {}
