@@ -4,10 +4,14 @@
 
 #include "ofxInteractivePrimitives.h"
 
+#include "ofxIPBaseElement.h"
+
 namespace ofxInteractivePrimitives
 {
+	class StringBox;
+}
 
-class StringBox : public Node
+class ofxInteractivePrimitives::StringBox : public Element2D
 {
 public:
 
@@ -19,17 +23,14 @@ public:
 		BITMAP_CHAR_NEWLINE_HEIGHT = 5
 	};
 
-	StringBox(RootNode &root) : Node()
-	{
-		setParent(&root);
-	}
+	StringBox(RootNode &root) : Element2D(root) {}
 
 	void draw()
 	{
 		ofPushStyle();
 		
 		ofNoFill();
-		ofRect(rect);
+		ofRect(getContentRect());
 
 		ofDrawBitmapString(text, MARGIN, BITMAP_CHAR_HEIGHT + MARGIN);
 		
@@ -39,7 +40,7 @@ public:
 	void hittest()
 	{
 		ofFill();
-		ofRect(rect);
+		ofRect(getContentRect());
 	}
 
 	void setText(const string& s)
@@ -67,24 +68,22 @@ public:
 		}
 
 		max_w = max(max_w, w);
-
+		
+		ofRectangle rect;
 		rect.y = -1;
 		rect.width = max_w * BITMAP_CHAR_WIDTH;
 		rect.height = h * BITMAP_CHAR_HEIGHT + (h - 1) * BITMAP_CHAR_NEWLINE_HEIGHT;
 
 		rect.width += MARGIN * 2 + 1;
 		rect.height += MARGIN * 2 + 1;
+		
+		setContentRect(rect);
 	}
 
 	const string& getText() const { return text; }
-
-	const ofRectangle& getRect() const { return rect; }
 	
 protected:
 
 	string text;
-	ofRectangle rect;
 
 };
-
-}

@@ -9,49 +9,63 @@ ofxInteractivePrimitives::RootNode root;
 
 namespace ofxInteractivePrimitives
 {
-	struct PortIdentifer;
+struct PortIdentifer;
+
+class Port;
+class PatchCord;
+
+class BaseMessage;
 	
-	class Port;
-	class PatchCord;
+template <typename T>
+class Message;
 	
-	class BaseMessage;
-	template <typename T> class Message;
-	typedef ofPtr<BaseMessage> MessageRef;
+typedef ofPtr<BaseMessage> MessageRef;
+
+class BasePatcher;
 	
-	class BasePatcher;
-	template <typename T> class Patcher;
+template <typename InteractivePrimitiveType>
+class AbstructPatcher;
 	
-	struct DelayedDeletable;
+template <typename T, typename V>
+class Patcher;
+
+struct DelayedDeletable;
+
+typedef unsigned long TypeID;
+
+// TODO: more better RTTI method
+template <typename T>
+TypeID Type2Int()
+{
+	const static unsigned int s = 0;
+	return (TypeID) & s;
+};
+
+bool in_range(const int& a, const int& b, const int& c)
+{
+	return a >= b && a < c;
+}
 	
-	typedef unsigned long TypeID;
-	
-	// TODO: more better RTTI method
-	template <typename T>
-	TypeID Type2Int()
-	{
-		const static unsigned int s = 0;
-		return (TypeID)&s;
-	};
-	
-	bool in_range(const int& a, const int& b, const int& c)
-	{
-		return a >= b && a < c;
-	}
+	static Port *patching_port;
 }
 
 struct ofxInteractivePrimitives::DelayedDeletable
 {
 public:
-	
+
 	DelayedDeletable() : will_delete(false) {}
-	
+	virtual ~DelayedDeletable() {}
+
 	void delayedDelete()
 	{
+		if (will_delete) return;
+
 		will_delete = true;
+
 		addToDelayedDeleteQueue(this);
+//		delete this;
 	}
-	
-	static void addToDelayedDeleteQueue(DelayedDeletable *o) { getQueue().push(o); }
+
 	static void deleteQueue()
 	{
 		Queue &queue = getQueue();
@@ -63,32 +77,35 @@ public:
 			queue.pop();
 		}
 	}
-	
+
 protected:
-	
+
+	static void addToDelayedDeleteQueue(DelayedDeletable *o) { getQueue().push(o); }
+
+protected:
+
 	bool getWillDelete() { return will_delete; }
 
 private:
-	
-	typedef std::queue<DelayedDeletable*> Queue;
-	
-	bool will_delete;
-	
-	static Queue& getQueue() { static Queue queue; return queue; }
-};
 
+	typedef std::queue<DelayedDeletable*> Queue;
+	static Queue& getQueue() { static Queue queue; return queue; }
+
+	bool will_delete;
+
+};
 
 class ofxInteractivePrimitives::BaseMessage : public DelayedDeletable
 {
 public:
-	
+
 	virtual ~BaseMessage() {}
-	
+
 	virtual bool isTypeOf() const { return false; }
-	
+
 	template <typename T>
-	Message<T>* cast() { return (Message<T>*)this; }
-	
+	Message<T>* cast() { return (Message<T>*) this; }
+
 	void execute() {}
 };
 
@@ -96,28 +113,28 @@ template <typename T>
 class ofxInteractivePrimitives::Message : public BaseMessage
 {
 public:
-	
+
 	Message() : type(Type2Int<T>()), value(T()) {}
 	Message(const T& value) : type(Type2Int<T>()), value(value) {}
-	
+
 	bool isTypeOf() const { return type == Type2Int<T>(); }
 	const T& get() { return value; }
 	bool set(const T& v) { value = v; }
-	
+
 	static MessageRef create(const T& v)
 	{
 		Message<T> *ptr = new Message<T>(v);
 		return MessageRef(ptr);
 	}
-	
+
 	static MessageRef create()
 	{
 		Message<T> *ptr = new Message<T>(T());
 		return MessageRef(ptr);
 	}
-	
+
 private:
-	
+
 	T value;
 	TypeID type;
 };
@@ -134,42 +151,42 @@ struct ofxInteractivePrimitives::PortIdentifer
 class ofxInteractivePrimitives::PatchCord : public Node, public DelayedDeletable
 {
 	friend class Port;
-	
+
 public:
-	
+
 	PatchCord(Port *upstream_port, Port *downstream_port);
 	~PatchCord() { disconnect(); }
-	
+
 	bool isValid() const { return upstream && downstream; }
-	
+
 	Port* getUpstream() const { return upstream; }
 	Port* getDownstream() const { return downstream; }
-	
+
 	void disconnect();
-	
+
 	void draw();
-	
+
 protected:
-	
+
 	Port* upstream;
 	Port* downstream;
-	
 };
 
 class ofxInteractivePrimitives::Port
 {
-	template <typename T> friend class Patcher;
-	
+	template <typename T, typename V>
+	friend class Patcher;
+
 public:
-	
+
 	Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction);
-	
+
 	void execute(MessageRef message);
-	
+
 	void draw()
 	{
 		ofRect(rect);
-		
+
 		if (direction == PortIdentifer::OUTPUT)
 		{
 			CordContainerType::iterator it = cords.begin();
@@ -181,76 +198,139 @@ public:
 			}
 		}
 	}
-	
+
 	void hittest()
 	{
 		ofRect(rect);
 	}
-	
+
 	void addCord(PatchCord *cord)
 	{
 		cords.insert(cord);
 	}
-	
+
 	void removeCord(PatchCord *cord)
 	{
 		cords.erase(cord);
 	}
-	
+
 	PortIdentifer::Direction getDirection() const { return direction; }
+
+	void setRect(const ofRectangle& rect) { this->rect = rect; }
+	const ofRectangle& getRect() { return rect; }
 	
 	ofVec3f getPos() const { return rect.getCenter(); }
 	ofVec3f getGlobalPos() const;
-	
+
 	BasePatcher* getPatcher() const { return patcher; }
-	
+
 	bool hasConnectTo(Port *port);
-	
+
 protected:
-	
+
 	typedef std::set<PatchCord*> CordContainerType;
 	CordContainerType cords;
-	
+
 	int index;
 	BasePatcher *patcher;
 	PortIdentifer::Direction direction;
-	
+
 	// data
 	MessageRef data;
-	
+
 	ofRectangle rect;
+};
+
+class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::DelayedDeletable
+{
+	friend class Port;
+
+public:
+
+	virtual int getNumInput() const { return 0; }
+	virtual int getNumOutput() const { return 0; }
+
+	virtual Port& getInputPort(int index) = 0;
+	virtual Port& getOutputPort(int index) = 0;
 	
+	//
+	
+	virtual ofVec3f localToGlobalPos(const ofVec3f& v) = 0;
+	virtual ofVec3f globalToLocalPos(const ofVec3f& v) = 0;
+	virtual ofVec3f getPosition() = 0;
+	
+protected:
+	
+	virtual void inputDataUpdated(int index) = 0;
 };
 
 
-class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::StringBox, public DelayedDeletable
+
+template <typename T, typename InteractivePrimitiveType = ofxInteractivePrimitives::StringBox>
+class ofxInteractivePrimitives::Patcher : public BasePatcher, public InteractivePrimitiveType
 {
-	friend class Port;
-	
 public:
-	
-	BasePatcher(RootNode &root) : StringBox(root) {}
+
+	Patcher(RootNode &root) : BasePatcher(), InteractivePrimitiveType(root)
+	{
+		input_data.resize(getNumInput());
+		output_data.resize(getNumOutput());
+
+		setupPatcher();
+
+		content = (ContextType*)T::create(input_data, output_data);
+	}
+
+	int getNumInput() const { return T::getNumInput(); }
+	TypeID getInputType(int index) const { return T::getInputType(index); }
+	void setInput(int index, MessageRef data) {}
+
+	int getNumOutput() const { return T::getNumOutput(); }
+	TypeID getOutputType(int index) const { return T::getOutputType(index); }
+	void setOutput(int index, MessageRef data) {}
+
+	Port& getInputPort(int index) { return input_port.at(index); }
+	Port& getOutputPort(int index) { return output_port.at(index); }
+
+	void execute()
+	{
+		for (int i = 0; i < getNumInput(); i++)
+		{
+			Port &input_port = getInputPort(i);
+			input_data[i] = input_port.data;
+		}
+
+		T::execute(this, content, input_data, output_data);
+
+		for (int i = 0; i < getNumOutput(); i++)
+		{
+			Port &output_port = getOutputPort(i);
+			output_port.execute(output_data[i]);
+		}
+	}
+
+	// ofxIP
 	
 	void draw()
 	{
 		ofPushStyle();
 		
-		StringBox::draw();
+		InteractivePrimitiveType::draw();
 		
 		ofNoFill();
 		
-		if (isHover())
+		if (this->isHover())
 		{
-			ofRectangle r = getRect();
+			ofRectangle r = this->getContentRect();
 			r.x -= 3;
 			r.y -= 3;
 			r.width += 6;
 			r.height += 6;
 			ofRect(r);
 		}
-
-		const vector<GLuint>& names = getCurrentNameStack();
-		if (isHover() && names.size() == 2)
+		
+		const vector<GLuint>& names = this->getCurrentNameStack();
+		if (this->isHover() && names.size() == 2)
 		{
 			int index = names[1];
 			
@@ -263,7 +343,7 @@ public:
 				p.y -= 1;
 			}
 			else if (names[0] == PortIdentifer::OUTPUT
-				&& in_range(names[1], 0, getNumOutput()))
+					 && in_range(names[1], 0, getNumOutput()))
 			{
 				p = getOutputPort(index).getPos();
 			}
@@ -280,7 +360,7 @@ public:
 		{
 			getInputPort(i).draw();
 		}
-
+		
 		for (int i = 0; i < getNumOutput(); i++)
 		{
 			getOutputPort(i).draw();
@@ -288,54 +368,54 @@ public:
 		
 		if (patching_port && patching_port->getPatcher() == this)
 		{
-			ofLine(patching_port->getPos(), globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
+			ofLine(patching_port->getPos(), this->globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
 		}
 		
 		ofPopStyle();
 	}
-	
+
 	void hittest()
 	{
-		StringBox::hittest();
+		InteractivePrimitiveType::hittest();
 		
 		ofFill();
 		
 		// input
-		pushID(PortIdentifer::INPUT);
+		this->pushID(PortIdentifer::INPUT);
 		
 		for (int i = 0; i < getNumInput(); i++)
 		{
-			pushID(i);
+			this->pushID(i);
 			getInputPort(i).hittest();
-			popID();
+			this->popID();
 		}
 		
-		popID();
+		this->popID();
 		
 		// output
-		pushID(PortIdentifer::OUTPUT);
+		this->pushID(PortIdentifer::OUTPUT);
 		
 		for (int i = 0; i < getNumOutput(); i++)
 		{
-			pushID(i);
+			this->pushID(i);
 			getOutputPort(i).hittest();
-			popID();
+			this->popID();
 		}
 		
-		popID();
+		this->popID();
 	}
-	
+
 	void mouseDragged(int x, int y, int button)
 	{
 		if (!patching_port)
 		{
-			move(getMouseDelta());
+			this->move(this->getMouseDelta());
 		}
 	}
-
+	
 	void mousePressed(int x, int y, int button)
 	{
-		const vector<GLuint>& names = getCurrentNameStack();
+		const vector<GLuint>& names = this->getCurrentNameStack();
 		
 		if (names.size() == 2)
 		{
@@ -347,14 +427,7 @@ public:
 			{
 				patching_port = &getOutputPort(names[1]);
 			}
-			else
-			{
-				assert(false);
-			}
-		}
-		else
-		{
-			StringBox::mousePressed(x, y, button);
+			else assert(false);
 		}
 	}
 	
@@ -362,7 +435,7 @@ public:
 	{
 		if (patching_port)
 		{
-			const vector<GLuint>& names = getCurrentNameStack();
+			const vector<GLuint>& names = this->getCurrentNameStack();
 			
 			if (names.size() == 2)
 			{
@@ -374,150 +447,130 @@ public:
 				{
 					upstream = patching_port;
 					downstream = &getInputPort(names[1]);
-					new PatchCord(patching_port, &getInputPort(names[1]));
 				}
 				else if (names[0] == PortIdentifer::INPUT
 						 && in_range(names[1], 0, getNumOutput()))
 				{
 					upstream = &getOutputPort(names[1]);
 					downstream = patching_port;
-
-					new PatchCord(&getOutputPort(names[1]), patching_port);
 				}
-				else
-				{
-					assert(false);
-				}
+				else assert(false);
 				
-				// patching validation
-				
-				// port is null
-				if (upstream == NULL || downstream == NULL) goto __cancel__;
-				
-				// already connected
-				if (upstream->hasConnectTo(downstream)) goto __cancel__;
-				
-				// patching oneself
-				if (upstream->getPatcher() == downstream->getPatcher()) goto __cancel__;
-				
-				
-				// create patchcord
-				new PatchCord(upstream, downstream);
-				
-				__cancel__: {
-					ofLogWarning("BasePatcher") << "patching failed";
-				}
+				createPatchCord(upstream, downstream);
 			}
 		}
 		
 		patching_port = NULL;
 	}
+
+	//
 	
-	virtual const char* getName() const { return ""; }
+	void update()
+	{
+		execute();
+
+	}
 	
-	virtual int getNumInput() const { return 0; }
-	virtual int getNumOutput() const { return 0; }
+	//
 	
-	Port& getInputPort(int index) { return input_port.at(index); }
-	Port& getOutputPort(int index) { return output_port.at(index); }
-	
+	ofVec3f localToGlobalPos(const ofVec3f& v) { return InteractivePrimitiveType::localToGlobalPos(v); }
+	ofVec3f globalToLocalPos(const ofVec3f& v) { return InteractivePrimitiveType::globalToLocalPos(v); }
+	ofVec3f getPosition() { return InteractivePrimitiveType::getPosition(); }
+
 protected:
+
+	void inputDataUpdated(int index)
+	{
+		execute();
+	}
 
 	void setupPatcher()
 	{
-		// NOTICE: do not create Port before setText
-		setText(getName());
+		T::updateDisplay(this);
 		
 		for (int i = 0; i < getNumInput(); i++)
 		{
 			input_port.push_back(Port(this, i, PortIdentifer::INPUT));
 		}
-
+		
 		for (int i = 0; i < getNumOutput(); i++)
 		{
 			output_port.push_back(Port(this, i, PortIdentifer::OUTPUT));
 		}
-	}
-
-protected:
-	
-	static Port *patching_port;
-	
-	vector<MessageRef> input_data, output_data;
-	
-	virtual void inputDataUpdated(int index) {}
-
-private:
-	
-	vector<Port> input_port, output_port;
-};
-
-ofxInteractivePrimitives::Port* ofxInteractivePrimitives::BasePatcher::patching_port = NULL;
-
-
-template <typename T>
-class ofxInteractivePrimitives::Patcher : public BasePatcher
-{
-public:
-	
-	Patcher(RootNode &root) : BasePatcher(root)
-	{
-		input_data.resize(getNumInput());
-		output_data.resize(getNumOutput());
 		
-		setupPatcher();
-		
-		content = (ContextType*)T::create(input_data, output_data);
+		alignPort();
 	}
 	
-	const char* getName() const { return T::getName(); }
-	
-	int getNumInput() const { return T::getNumInput(); }
-	TypeID getInputType(int index) const { return T::getInputType(index); }
-	void setInput(int index, MessageRef data) {}
-	
-	
-	int getNumOutput() const { return T::getNumOutput(); }
-	TypeID getOutputType(int index) const { return T::getOutputType(index); }
-	void setOutput(int index, MessageRef data) {}
-	
-	void execute()
+	virtual void alignPort()
 	{
 		for (int i = 0; i < getNumInput(); i++)
 		{
-			Port &input_port = getInputPort(i);
-			input_data[i] = input_port.data;
+			ofRectangle rect;
+			rect.x = 14 * i;
+			rect.y = -5;
+			rect.width = 10;
+			rect.height = 4;
+			
+			getInputPort(i).setRect(rect);
 		}
-		
-		T::execute(this, content, input_data, output_data);
 		
 		for (int i = 0; i < getNumOutput(); i++)
 		{
-			Port &output_port = getOutputPort(i);
-			output_port.execute(output_data[i]);
+			ofRectangle rect;
+			rect.x = 14 * i;
+			rect.y = this->getContentHeight();
+			rect.width = 10;
+			rect.height = 4;
+			
+			getOutputPort(i).setRect(rect);
 		}
 	}
 	
-	void update()
+	PatchCord* createPatchCord(Port *upstream, Port *downstream)
 	{
-		execute();
+		// patching validation
+		const char *msg = "unknown error";
 		
+		// port is null
+		if (upstream == NULL || downstream == NULL)
+		{
+			msg = "port is null";
+			goto __cancel__;
+		}
+		
+		// already connected
+		if (upstream->hasConnectTo(downstream))
+		{
+			msg = "already connected";
+			goto __cancel__;
+		}
+		
+		// patching oneself
+		if (upstream->getPatcher() == downstream->getPatcher())
+		{
+			msg = "patching oneself";
+			goto __cancel__;
+		}
+		
+		// TODO: loop detection
+		
+		// create patchcord
+		return new PatchCord(upstream, downstream);
+		
+	__cancel__:
+		
+		ofLogWarning("AbstructPatcher") << "patching failed: " << msg;
+		return NULL;
 	}
-	
-protected:
-	
-	void inputDataUpdated(int index)
-	{
-		execute();
-	}
-	
+
 private:
-	
+
 	typedef typename T::ContextType ContextType;
 	ContextType *content;
 	
+	vector<MessageRef> input_data, output_data;
+	vector<Port> input_port, output_port;
 };
-
 
 //
 
@@ -525,8 +578,7 @@ using namespace ofxInteractivePrimitives;
 
 // PatchCord
 
-PatchCord::PatchCord(Port *upstream_port, Port *downstream_port)
-: upstream(upstream_port), downstream(downstream_port)
+PatchCord::PatchCord(Port *upstream_port, Port *downstream_port) : upstream(upstream_port), downstream(downstream_port)
 {
 	getUpstream()->addCord(this);
 	getDownstream()->addCord(this);
@@ -536,17 +588,19 @@ void PatchCord::disconnect()
 {
 	getUpstream()->removeCord(this);
 	getDownstream()->removeCord(this);
-	
+
 	delayedDelete();
 }
 
 void PatchCord::draw()
 {
 	if (!isValid()) return;
-	
+
 	const ofVec3f p0 = getUpstream()->getPos();
 	const ofVec3f p1 = getUpstream()->getPatcher()->globalToLocalPos(getDownstream()->getGlobalPos());
 	
+	// cout << p0 << " / " << p1 << endl;
+	cout << getDownstream()->getPatcher()->getPosition() << endl;
 	ofLine(p0, p1);
 }
 
@@ -554,23 +608,6 @@ void PatchCord::draw()
 
 Port::Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction) : patcher(patcher), index(index), direction(direction)
 {
-	if (direction == PortIdentifer::INPUT)
-	{
-		rect.x = 14 * index;
-		rect.y = -5;
-	}
-	else if (direction == PortIdentifer::OUTPUT)
-	{
-		rect.x = 14 * index;
-		rect.y = patcher->getRect().height;
-	}
-	else
-	{
-		assert(false);
-	}
-	
-	rect.width = 10;
-	rect.height = 4;
 }
 
 void Port::execute(MessageRef message)
@@ -607,7 +644,7 @@ bool Port::hasConnectTo(Port *port)
 		PatchCord *cord = *it;
 		Port *p = cord->getDownstream();
 		if (p == port) return true;
-		
+
 		it++;
 	}
 
@@ -618,11 +655,10 @@ bool Port::hasConnectTo(Port *port)
 
 using namespace ofxInteractivePrimitives;
 
-
 class TestClass
 {
 public:
-	
+
 	void test(int i)
 	{
 		cout << "hello: " << i << endl;
@@ -632,38 +668,43 @@ public:
 struct TestClassWrapper
 {
 	typedef TestClass ContextType;
-		
+
 	static const char* getName() { return "TestClass"; }
-	
+
 	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
 	{
 		output[0] = Message<ofVec3f>::create(ofVec3f(0));
-		
+
 		return new TestClass;
 	}
-	
-	static void execute(BasePatcher *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
+
+	static void execute(Patcher<TestClassWrapper> *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
 	{
-		
+
 		Message<ofVec3f> *out0 = output[0]->cast<ofVec3f>();
 		out0->set(patcher->getPosition());
 	}
 	
+	static void updateDisplay(Patcher<TestClassWrapper> *patcher)
+	{
+		patcher->setText(getName());
+	}
+
 	static int getNumInput()
 	{
 		return 0;
 	}
-	
+
 	static TypeID getInputType(int index)
 	{
 		return Type2Int<void>();
 	}
-	
+
 	static int getNumOutput()
 	{
 		return 1;
 	}
-	
+
 	static TypeID getOutputType(int index)
 	{
 		return Type2Int<ofVec3f>();
@@ -674,16 +715,16 @@ struct TestClassWrapper
 struct PrintClassWrapper
 {
 	typedef TestClass ContextType;
-	
+
 	static const char* getName() { return "PrintClass"; }
-	
+
 	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
 	{
 		input[0] = Message<int>::create(42);
 		return NULL;
 	}
-	
-	static void execute(BasePatcher *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
+
+	static void execute(Patcher<PrintClassWrapper> *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
 	{
 		Message<ofVec3f> *in0 = input[0]->cast<ofVec3f>();
 		if (in0)
@@ -694,27 +735,31 @@ struct PrintClassWrapper
 		}
 	}
 	
+	static void updateDisplay(Patcher<PrintClassWrapper> *patcher)
+	{
+		patcher->setText(getName());
+	}
+
 	static int getNumInput()
 	{
 		return 1;
 	}
-	
+
 	static TypeID getInputType(int index)
 	{
 		return Type2Int<int>();
 	}
-	
+
 	static int getNumOutput()
 	{
 		return 0;
 	}
-	
+
 	static TypeID getOutputType(int index)
 	{
 		return Type2Int<void>();
 	}
 };
-
 
 Patcher<TestClassWrapper> *node0;
 Patcher<PrintClassWrapper> *node1;
@@ -724,19 +769,17 @@ PatchCord *cord;
 void testApp::setup()
 {
 
-	
 	ofSetFrameRate(60);
 	ofSetVerticalSync(true);
 	ofBackground(0);
-	
+
 	node0 = new Patcher<TestClassWrapper>(root);
 	node1 = new Patcher<PrintClassWrapper>(root);
-	
+
 	// node0 -> node1
 //	cord = new PatchCord(&node0->getOutputPort(0), &node1->getInputPort(0));
-	
-	node0->execute();
-	
+
+
 	node0->setPosition(200, 200, 0);
 	node1->setPosition(200, 300, 0);
 }
@@ -745,7 +788,7 @@ void testApp::setup()
 void testApp::update()
 {
 	ofxInteractivePrimitives::DelayedDeletable::deleteQueue();
-	
+
 	root.update();
 }
 
@@ -753,7 +796,7 @@ void testApp::update()
 void testApp::draw()
 {
 	ofSetColor(255);
-	
+
 	root.draw();
 }
 
