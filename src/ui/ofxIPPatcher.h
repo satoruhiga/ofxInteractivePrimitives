@@ -24,12 +24,14 @@ namespace ofxInteractivePrimitives
 	
 	class BasePatcher;
 	
-	template <typename InteractivePrimitiveType>
-	class AbstructPatcher;
+	struct NullParam {};
 	
-	template <typename T, typename V>
+	template <typename T, typename P, typename V>
 	class Patcher;
 	
+	template <typename T, typename ContextType, typename ParamType, typename InteractivePrimitiveType>
+	struct AbstructWrapper;
+
 	struct DelayedDeletable;
 	
 	typedef unsigned long TypeID;
@@ -64,7 +66,6 @@ public:
 	void delayedDelete()
 	{
 		if (will_delete) return;
-		
 		will_delete = true;
 		
 		addToDelayedDeleteQueue(this);
@@ -112,6 +113,7 @@ public:
 	
 	virtual bool isTypeOf() const { return false; }
 	
+	// TODO: add type checking
 	template <typename T>
 	Message<T>* cast() { return (Message<T>*) this; }
 	
@@ -194,7 +196,7 @@ protected:
 
 class ofxInteractivePrimitives::Port
 {
-	template <typename T, typename V>
+	template <typename T, typename P, typename V>
 	friend class Patcher;
 	
 public:
@@ -296,19 +298,21 @@ protected:
 
 #pragma mark - Patcher
 
-template <typename T, typename InteractivePrimitiveType = ofxInteractivePrimitives::StringBox>
+template <typename T, typename P = ofxInteractivePrimitives::NullParam, typename InteractivePrimitiveType = ofxInteractivePrimitives::StringBox>
 class ofxInteractivePrimitives::Patcher : public BasePatcher, public InteractivePrimitiveType
 {
 public:
 	
-	Patcher(RootNode &root) : BasePatcher(), InteractivePrimitiveType(root)
+	P param;
+	
+	Patcher(RootNode &root, const P& param = P()) : BasePatcher(), InteractivePrimitiveType(root), param(param)
 	{
 		input_data.resize(getNumInput());
 		output_data.resize(getNumOutput());
 		
-		setupPatcher();
+		content = (Context*)T::create(input_data, output_data);
 		
-		content = (ContextType*)T::create(input_data, output_data);
+		setupPatcher();
 	}
 	
 	~Patcher()
@@ -332,7 +336,7 @@ public:
 	TypeID getOutputType(int index) const { return T::getOutputType(index); }
 	void setOutput(int index, MessageRef data) {}
 	
-	void update() { T::update(this); }
+	void update() { T::update(this, content); }
 	
 	Port& getInputPort(int index) { return input_port.at(index); }
 	Port& getOutputPort(int index) { return output_port.at(index); }
@@ -561,7 +565,11 @@ protected:
 	
 	void setupPatcher()
 	{
-		T::layout(this);
+		T::layout(this, content);
+		
+		disposePatchCords();
+		input_port.clear();
+		output_port.clear();
 		
 		for (int i = 0; i < getNumInput(); i++)
 		{
@@ -640,8 +648,8 @@ protected:
 	
 private:
 	
-	typedef typename T::ContextType ContextType;
-	ContextType *content;
+	typedef typename T::Context Context;
+	Context *content;
 	
 	vector<MessageRef> input_data, output_data;
 	vector<Port> input_port, output_port;
@@ -655,8 +663,8 @@ struct ofxInteractivePrimitives::BaseWrapper
 	
 	static void execute(BasePatcher *patcher, void *context, const vector<MessageRef>& input, vector<MessageRef>& output) {}
 	
-	static void layout(BasePatcher *patcher) {}
-	static void update(BasePatcher *patcher) {}
+	static void layout(BasePatcher *patcher, void *context) {}
+	static void update(BasePatcher *patcher, void *context) {}
 	
 	static int getNumInput()
 	{
@@ -677,4 +685,29 @@ struct ofxInteractivePrimitives::BaseWrapper
 	{
 		return Type2Int<void>();
 	}
+};
+
+template <
+	typename T,
+	typename ContextType = void,
+	typename ParamType = ofxInteractivePrimitives::NullParam,
+	typename InteractivePrimitiveType = ofxInteractivePrimitives::StringBox
+>
+struct ofxInteractivePrimitives::AbstructWrapper : public BaseWrapper
+{
+	typedef ContextType Context;
+	typedef ParamType Param;
+	typedef T Class;
+	typedef ofxInteractivePrimitives::Patcher<Class, Param, InteractivePrimitiveType> Patcher;
+	
+	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
+	{
+		return NULL;
+	}
+	
+	static void execute(Patcher *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+	
+	static void layout(Patcher *patcher, ContextType *context) {}
+	static void update(Patcher *patcher, ContextType *context) {}
+	
 };
