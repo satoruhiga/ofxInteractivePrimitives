@@ -23,7 +23,7 @@ public:
 		BITMAP_CHAR_NEWLINE_HEIGHT = 5
 	};
 
-	StringBox(RootNode &root) : Element2D(root) {}
+	StringBox(Node &parent) : Element2D(parent) {}
 
 	void draw()
 	{

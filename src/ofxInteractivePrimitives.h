@@ -28,10 +28,45 @@ public:
 	virtual void draw() {}
 	virtual void hittest() {}
 
-	virtual void mousePressed(int x, int y, int button) {}
-	virtual void mouseReleased(int x, int y, int button) {}
-	virtual void mouseMoved(int x, int y) {}
-	virtual void mouseDragged(int x, int y, int button) {}
+	virtual void mousePressed(int x, int y, int button)
+	{
+		if (hasParent())
+		{
+			ofVec3f g = localToGlobalPos(ofVec3f(x, y, 0));
+			g = getParent()->globalToLocalPos(g);
+			getParent()->mousePressed(g.x, g.y, button);
+		}
+	}
+	
+	virtual void mouseReleased(int x, int y, int button)
+	{
+		if (hasParent())
+		{
+			ofVec3f g = localToGlobalPos(ofVec3f(x, y, 0));
+			g = getParent()->globalToLocalPos(g);
+			getParent()->mouseReleased(g.x, g.y, button);
+		}
+	}
+	
+	virtual void mouseMoved(int x, int y)
+	{
+		if (hasParent())
+		{
+			ofVec3f g = localToGlobalPos(ofVec3f(x, y, 0));
+			g = getParent()->globalToLocalPos(g);
+			getParent()->mouseMoved(g.x, g.y);
+		}
+	}
+	
+	virtual void mouseDragged(int x, int y, int button)
+	{
+		if (hasParent())
+		{
+			ofVec3f g = localToGlobalPos(ofVec3f(x, y, 0));
+			g = getParent()->globalToLocalPos(g);
+			getParent()->mouseDragged(g.x, g.y, button);
+		}
+	}
 
 	virtual void keyPressed(int key) {}
 	virtual void keyReleased(int key) {}
@@ -40,6 +75,7 @@ public:
 
 	void setParent(Node *o);
 	Node* getParent() { return (Node*)ofNode::getParent(); }
+	bool hasParent() { return ofNode::getParent() != NULL; }
 	void clearParent();
 	
 	vector<Node*> getChildren() { return children; }
@@ -116,3 +152,13 @@ private:
 
 	Context *context;
 };
+
+
+// primitives
+
+#include "ui/ofxIPBaseElement.h"
+#include "ui/ofxIPMarker.h"
+#include "ui/ofxIPSlider.h"
+#include "ui/ofxIPButton.h"
+#include "ui/ofxIPPatcher.h"
+#include "ui/ofxIPStringBox.h"

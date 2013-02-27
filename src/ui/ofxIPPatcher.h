@@ -44,7 +44,7 @@ namespace ofxInteractivePrimitives
 		return (TypeID) & s;
 	};
 	
-	bool in_range(const int& a, const int& b, const int& c)
+	inline bool in_range(const int& a, const int& b, const int& c)
 	{
 		return a >= b && a < c;
 	}
@@ -305,7 +305,7 @@ public:
 	
 	P param;
 	
-	Patcher(RootNode &root, const P& param = P()) : BasePatcher(), InteractivePrimitiveType(root), param(param)
+	Patcher(Node &parent, const P& param = P()) : BasePatcher(), InteractivePrimitiveType(parent), param(param)
 	{
 		input_data.resize(getNumInput());
 		output_data.resize(getNumOutput());

@@ -6,12 +6,14 @@
 
 namespace ofxInteractivePrimitives
 {
+	class Button;
+}
 
-class Button : public StringBox
+class ofxInteractivePrimitives::Button : public StringBox
 {
 public:
 
-	Button(RootNode &root) : StringBox(root) {}
+	Button(Node &parent) : StringBox(parent) {}
 
 	void draw()
 	{
@@ -19,7 +21,7 @@ public:
 		{
 			ofFill();
 			ofSetColor(0, 255, 0);
-			ofRect(rect);
+			ofRect(getContentRect());
 
 			ofSetColor(0, 127, 0);
 		}
@@ -27,18 +29,16 @@ public:
 		{
 			ofNoFill();
 			ofSetColor(255, 0, 255);
-			ofRect(rect);
+			ofRect(getContentRect());
 		}
 		else
 		{
 			ofNoFill();
 			ofSetColor(0, 255, 0);
-			ofRect(rect);
+			ofRect(getContentRect());
 		}
 
 		ofDrawBitmapString(text, MARGIN, BITMAP_CHAR_HEIGHT + MARGIN);
 	}
 
 };
-
-}
