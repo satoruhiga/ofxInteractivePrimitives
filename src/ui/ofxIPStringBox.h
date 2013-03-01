@@ -9,6 +9,7 @@
 namespace ofxInteractivePrimitives
 {
 	class StringBox;
+	class DraggableStringBox;
 }
 
 class ofxInteractivePrimitives::StringBox : public Element2D
@@ -86,4 +87,17 @@ protected:
 
 	string text;
 
+};
+
+
+class ofxInteractivePrimitives::DraggableStringBox : public StringBox
+{
+public:
+	
+	DraggableStringBox(Node &parent) : StringBox(parent) {}
+	
+	void mouseDragged(int x, int y, int button)
+	{
+		move(getMouseDelta());
+	}
 };

@@ -296,9 +296,11 @@ protected:
 	virtual void inputDataUpdated(int index) = 0;
 };
 
+
+
 #pragma mark - Patcher
 
-template <typename T, typename P = ofxInteractivePrimitives::NullParam, typename InteractivePrimitiveType = ofxInteractivePrimitives::StringBox>
+template <typename T, typename P = ofxInteractivePrimitives::NullParam, typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox>
 class ofxInteractivePrimitives::Patcher : public BasePatcher, public InteractivePrimitiveType
 {
 public:
@@ -336,8 +338,6 @@ public:
 	TypeID getOutputType(int index) const { return T::getOutputType(index); }
 	void setOutput(int index, MessageRef data) {}
 	
-	void update() { T::update(this, content); }
-	
 	Port& getInputPort(int index) { return input_port.at(index); }
 	Port& getOutputPort(int index) { return output_port.at(index); }
 	
@@ -359,6 +359,8 @@ public:
 	}
 	
 	// ofxIP
+	
+	void update() { InteractivePrimitiveType::update(); T::update(this, content); }
 	
 	void draw()
 	{
@@ -468,9 +470,9 @@ public:
 	
 	void mouseDragged(int x, int y, int button)
 	{
-		if (!patching_port)
+		if (patching_port == 0)
 		{
-			this->move(this->getMouseDelta());
+			InteractivePrimitiveType::mouseDragged(x, y, button);
 		}
 	}
 	
@@ -489,6 +491,10 @@ public:
 				patching_port = &getOutputPort(names[1]);
 			}
 			else assert(false);
+		}
+		else
+		{
+			InteractivePrimitiveType::mousePressed(x, y, button);
 		}
 	}
 	
@@ -520,6 +526,10 @@ public:
 				createPatchCord(upstream, downstream);
 			}
 		}
+		else
+		{
+			InteractivePrimitiveType::mouseReleased(x, y, button);
+		}
 		
 		__cancel__:;
 		patching_port = NULL;
@@ -531,6 +541,10 @@ public:
 		{
 			disposePatchCords();
 			delayedDelete();
+		}
+		else
+		{
+			InteractivePrimitiveType::keyPressed(key);
 		}
 	}
 	
@@ -691,7 +705,7 @@ template <
 	typename T,
 	typename ContextType = void,
 	typename ParamType = ofxInteractivePrimitives::NullParam,
-	typename InteractivePrimitiveType = ofxInteractivePrimitives::StringBox
+	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
 >
 struct ofxInteractivePrimitives::AbstructWrapper : public BaseWrapper
 {

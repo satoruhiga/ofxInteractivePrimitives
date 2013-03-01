@@ -15,6 +15,8 @@ class ofxInteractivePrimitives::Slider : public Element2D
 {
 public:
 	
+	ofEvent<float> valueUpdated;
+	
 	Slider(Node &root) : Element2D(root), label(*this), value(0), min(0), max(1), slider_width(0)
 	{
 		setContentRect(ofRectangle(0, 0, 100, 12));
@@ -50,7 +52,12 @@ public:
 		popID();
 	}
 	
-	void setValue(float v) { value = v; }
+	void setValue(float v)
+	{
+		value = v;
+		slider_width = ofMap(v, min, max, 0, 1, true);
+	}
+	
 	float getValue() const { return value; }
 	
 	void setMin(float v) { min = v; }
@@ -93,6 +100,12 @@ protected:
 	void updateValue(int x)
 	{
 		slider_width = ofMap(x, 0, getContentWidth(), 0, 1, true);
-		value = ofMap(slider_width, 0, 1, min, max);
+		float v = ofMap(slider_width, 0, 1, min, max);
+		
+		if (value != v)
+		{
+			value = v;
+			ofNotifyEvent(valueUpdated, value);
+		}
 	}
 };
