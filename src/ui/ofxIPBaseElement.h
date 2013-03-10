@@ -11,7 +11,7 @@ class ofxInteractivePrimitives::Element2D : public Node
 {
 public:
 
-	Element2D(RootNode &root) : Node()
+	Element2D(Node &root) : Node()
 	{
 		setParent(&root);
 	}

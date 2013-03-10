@@ -6,14 +6,16 @@
 
 namespace ofxInteractivePrimitives
 {
+	class Marker;
+}
 
-class Marker : public Node
+class ofxInteractivePrimitives::Marker : public Node
 {
 public:
 
-	Marker(RootNode &root) : Node()
+	Marker(Node &parent) : Node()
 	{
-		setParent(&root);
+		setParent(&parent);
 	}
 
 	void draw()
@@ -64,5 +66,3 @@ protected:
 	string text;
 
 };
-
-}
