@@ -107,6 +107,9 @@ public:
 	void update();
 	
 	bool hasFocusdObject();
+	
+	void enableAllEvent();
+	void disableAllEvent();
 
 protected:
 

@@ -675,3 +675,15 @@ bool RootNode::hasFocusdObject()
 {
 	return context->focus_object != NULL;
 }
+
+void RootNode::enableAllEvent()
+{
+	getContext()->enableAllEvent();
+}
+
+void RootNode::disableAllEvent()
+{
+	getContext()->disableAllEvent();
+}
+
+
