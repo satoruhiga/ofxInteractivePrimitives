@@ -545,6 +545,12 @@ void Node::clearState()
 	focus = false;
 }
 
+void Node::setFocus()
+{
+	focus = true;
+	getContext()->focus_object = this;
+}
+
 Context* Node::getContext()
 {
 	Node *p = getParent();
@@ -671,9 +677,14 @@ Context* RootNode::getContext()
 	return context;
 }
 
-bool RootNode::hasFocusdObject()
+bool RootNode::hasFocusObject()
 {
 	return context->focus_object != NULL;
+}
+
+Node* RootNode::getFocusObject()
+{
+	return context->focus_object;
 }
 
 void RootNode::enableAllEvent()

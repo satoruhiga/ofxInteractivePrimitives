@@ -91,6 +91,7 @@ public:
 
 	inline bool isFocus() const { return focus; }
 	inline bool hasFocus() const { return focus; }
+	void setFocus();
 	
 	inline void setEnable(bool v) { enable = v; }
 	inline bool getEnable() { return enable; }
@@ -142,7 +143,8 @@ public:
 	void draw();
 	void update();
 	
-	bool hasFocusdObject();
+	bool hasFocusObject();
+	Node* getFocusObject();
 	
 	void enableAllEvent();
 	void disableAllEvent();

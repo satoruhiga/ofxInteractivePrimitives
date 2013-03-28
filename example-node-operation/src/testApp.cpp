@@ -151,7 +151,7 @@ void testApp::update()
 {
 	root.update();
 	
-	if (root.hasFocusdObject())
+	if (root.hasFocusObject())
 	{
 		cam.disableMouseInput();
 	}
