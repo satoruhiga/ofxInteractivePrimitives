@@ -20,7 +20,7 @@ public:
 
 struct TestClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 {
-	typedef TestClass ContextType;
+	typedef TestClass Context;
 
 	static const char* getName() { return "TestClass"; }
 
@@ -31,19 +31,19 @@ struct TestClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 		return new TestClass;
 	}
 
-	static void execute(Patcher<TestClassWrapper> *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
+	static void execute(Patcher<TestClassWrapper> *patcher, Context *context, const vector<MessageRef>& input, vector<MessageRef>& output)
 	{
 
 		Message<ofVec3f> *out0 = output[0]->cast<ofVec3f>();
 		out0->set(patcher->getPosition());
 	}
 	
-	static void update(BasePatcher *patcher)
+	static void update(BasePatcher *patcher, Context *context)
 	{
 		patcher->execute();
 	}
 
-	static void layout(Patcher<TestClassWrapper> *patcher)
+	static void layout(Patcher<TestClassWrapper> *patcher, Context *context)
 	{
 		patcher->setText(getName());
 	}
@@ -66,7 +66,7 @@ struct TestClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 
 struct PrintClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 {
-	typedef TestClass ContextType;
+	typedef TestClass Context;
 
 	static const char* getName() { return "PrintClass"; }
 
@@ -76,7 +76,7 @@ struct PrintClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 		return NULL;
 	}
 
-	static void execute(Patcher<PrintClassWrapper> *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output)
+	static void execute(Patcher<PrintClassWrapper> *patcher, Context *context, const vector<MessageRef>& input, vector<MessageRef>& output)
 	{
 		Message<ofVec3f> *in0 = input[0]->cast<ofVec3f>();
 		if (in0)
@@ -87,12 +87,12 @@ struct PrintClassWrapper : public ofxInteractivePrimitives::BaseWrapper
 		}
 	}
 	
-	static void layout(Patcher<PrintClassWrapper> *patcher)
+	static void layout(Patcher<PrintClassWrapper> *patcher, Context *context)
 	{
 		patcher->setText(getName());
 	}
 	
-	static void update(BasePatcher *patcher)
+	static void update(BasePatcher *patcher, Context *context)
 	{
 	}
 
