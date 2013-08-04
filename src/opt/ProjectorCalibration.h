@@ -24,7 +24,7 @@ public:
 
 	typedef ofPtr<Marker> Ref;
 	
-	Marker(int id, Node &parent) : id(id), ofxInteractivePrimitives::Marker(parent) {}
+	Marker(int id, Node &parent) : id(id), need_update_calib(false), ofxInteractivePrimitives::Marker(parent) {}
 	
 	void draw();
 	void update();
@@ -35,10 +35,15 @@ public:
 	const ofVec3f& getObjectPoint() const { return object_pos; }
 	
 	
+	
 protected:
 	
 	int id;
 	ofVec3f object_pos;
+	
+	ofVec3f last_position;
+	bool need_update_calib;
+	
 };
 
 class Manager
@@ -53,8 +58,10 @@ public:
 	void load(string path);
 	void save(string path);
 	
+	bool getNeedUpdateCalibration() const;
+	
 	ofMatrix4x4 getHomography();
-	bool getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, int width, int height, float initial_fovY = 60);
+	void getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, int width, int height, float initial_fovY = 60);
 	
 	void setImagePoint(int x, int y);
 
@@ -71,6 +78,8 @@ protected:
 	
 	ofxInteractivePrimitives::RootNode root;
 	vector<Marker*> markers;
+	
+	void markUpdated();
 
 };
 

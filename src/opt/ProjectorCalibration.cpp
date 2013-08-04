@@ -29,6 +29,14 @@ void Marker::update()
 	ss << (int)object_pos.x << ":" << (int)object_pos.y << ":" << (int)object_pos.z;
 	
 	text = ss.str();
+	
+	if (last_position != getPosition())
+	{
+		last_position = getPosition();
+		need_update_calib = true;
+	}
+	
+	// cout << need_update_calib << endl;
 }
 
 void Marker::keyPressed(int key)
@@ -47,6 +55,10 @@ void Marker::keyPressed(int key)
 
 ofMatrix4x4 Manager::getHomography()
 {
+	assert(markers.size() >= 6);
+	
+	markUpdated();
+	
 	using namespace cv;
 	using namespace ofxCv;
 	
@@ -63,9 +75,11 @@ ofMatrix4x4 Manager::getHomography()
 	return homography2glModelViewMatrix(homography);
 }
 
-bool Manager::getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, int width, int height, float initial_fovY)
+void Manager::getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, int width, int height, float initial_fovY)
 {
 	assert(markers.size() >= 6);
+	
+	markUpdated();
 	
 	using namespace ofxCv;
 	using namespace cv;
@@ -109,10 +123,25 @@ bool Manager::getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, i
 
 	cout << "rms: " << rms << endl;
 	
+	{
+		cv::Point2d principal_point, fov;
+		double aspect, focal_length;
+
+		cv::calibrationMatrixValues(camera_matrix,
+									image_size,
+									0,
+									0,
+									fov.x,
+									fov.y,
+									focal_length,
+									principal_point,
+									aspect);
+		
+		cout << "fov: " << fov << endl;
+	}
+	
 	params = ofxCameraCalibUtils::CameraParam(ofxCameraCalibUtils::CameraParam::Intrinsics(camera_matrix, image_size),
 											  ofxCameraCalibUtils::CameraParam::Extrinsic(rvecs[0], tvecs[0]));
-	
-	return true;
 }
 
 void Manager::setup(int num_markers)
@@ -190,6 +219,23 @@ void Manager::clear()
 	markers.clear();
 }
 
+bool Manager::getNeedUpdateCalibration() const
+{
+	for (int i = 0; i < markers.size(); i++)
+		if (markers[i]->need_update_calib)
+			return true;
+	
+	return false;
+}
+
+void Manager::markUpdated()
+{
+	for (int i = 0; i < markers.size(); i++)
+	{
+		if (markers[i]->need_update_calib)
+			markers[i]->need_update_calib = false;
+	}
+}
 
 // IO
 
