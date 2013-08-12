@@ -20,7 +20,7 @@ public:
 protected:
 	
 	int id;
-	ofVec2f image_pos;
+	ofVec3f object_pos;
 };
 
 class CalibrationMaker::Manager
@@ -36,9 +36,9 @@ public:
 	void save(string path);
 	
 	ofMatrix4x4 getHomography();
-	ofMatrix4x4 getEstimatedCameraPose(int width, int height, float fov);
+	pair<ofMatrix4x4, ofMatrix4x4> getEstimatedCameraPose(int width, int height, float fov);
 	
-	void setImagePoint(int x, int y);
+	void setImagePoint(int x, int y, int z = 0);
 	
 protected:
 	
