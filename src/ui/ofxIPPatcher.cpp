@@ -65,29 +65,36 @@ void PatchCord::keyPressed(int key)
 
 // Port
 
-Port::Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction) : patcher(patcher), index(index), direction(direction)
+Port::Port(BasePatcher *patcher, size_t index, PortIdentifer::Direction direction, const string &desc) : patcher(patcher), index(index), direction(direction), desc(desc)
 {
 }
 
-void Port::execute(MessageRef message)
+MessageRef& Port::requestUpdate()
 {
 	if (direction == PortIdentifer::INPUT)
-	{
-		data = message;
-		patcher->inputDataUpdated(index);
-	}
-	else if (direction == PortIdentifer::OUTPUT)
 	{
 		CordContainerType::iterator it = cords.begin();
 		while (it != cords.end())
 		{
 			PatchCord *cord = *it;
-			Port *port = cord->getDownstream();
-			if (port) port->execute(message);
-			
+			Port *port = cord->getUpstream();
+			if (port)
+			{
+				port->requestUpdate();
+				
+				// TODO: data multiplexing
+				data = port->data;
+			}
+
 			it++;
 		}
 	}
+	else if (direction == PortIdentifer::OUTPUT)
+	{
+		patcher->executeUpstream();
+	}
+	
+	return data;
 }
 
 ofVec3f Port::getGlobalPos() const

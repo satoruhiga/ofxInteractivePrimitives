@@ -24,13 +24,13 @@ namespace ofxInteractivePrimitives
 	
 	class BasePatcher;
 	
-	struct NullParam {};
+	struct NullType {};
 	
-	template <typename T, typename P, typename V>
+	template <typename T, typename V>
 	class Patcher;
 	
-	template <typename T, typename ContextType, typename ParamType, typename InteractivePrimitiveType>
-	struct AbstructWrapper;
+	template <typename T, typename InteractivePrimitiveType>
+	struct Wrapper;
 
 	struct DelayedDeletable;
 	
@@ -41,7 +41,7 @@ namespace ofxInteractivePrimitives
 	TypeID Type2Int()
 	{
 		const static unsigned int s = 0;
-		return (TypeID) & s;
+		return (TypeID)&s;
 	};
 	
 	inline bool in_range(const int& a, const int& b, const int& c)
@@ -109,15 +109,35 @@ class ofxInteractivePrimitives::BaseMessage : public DelayedDeletable
 {
 public:
 	
+	BaseMessage() : type(Type2Int<NullType>()) {}
+	
 	virtual ~BaseMessage() {}
+
+	inline TypeID getType() const { return type; }
 	
-	virtual bool isTypeOf() const { return false; }
-	
-	// TODO: add type checking
 	template <typename T>
-	Message<T>* cast() { return (Message<T>*) this; }
+	inline bool isTypeOf() const { return type == Type2Int<T>(); }
+	
+	template <typename T>
+	inline Message<T>* cast() { return (Message<T>*)this; }
+	
+	template <typename T>
+	inline bool get(T &v)
+	{
+		if (isTypeOf<T>())
+		{
+			v = this->cast<T>()->get();
+			return true;
+		}
+
+		return false;
+	}
 	
 	void execute() {}
+	
+protected:
+	
+	TypeID type;
 };
 
 #pragma mark - Message
@@ -127,10 +147,16 @@ class ofxInteractivePrimitives::Message : public BaseMessage
 {
 public:
 	
-	Message() : type(Type2Int<T>()), value(T()) {}
-	Message(const T& value) : type(Type2Int<T>()), value(value) {}
+	Message() : value(T())
+	{
+		type = Type2Int<T>();
+	}
 	
-	bool isTypeOf() const { return type == Type2Int<T>(); }
+	Message(const T& value) : value(value)
+	{
+		type = Type2Int<T>();
+	}
+	
 	const T& get() { return value; }
 	bool set(const T& v) { value = v; }
 	
@@ -149,7 +175,6 @@ public:
 private:
 	
 	T value;
-	TypeID type;
 };
 
 #pragma mark - PortIdentifer
@@ -196,18 +221,18 @@ protected:
 
 class ofxInteractivePrimitives::Port
 {
-	template <typename T, typename P, typename V>
+	template <typename T, typename V>
 	friend class Patcher;
 	
 public:
 	
-	Port(BasePatcher *patcher, int index, PortIdentifer::Direction direction);
+	Port(BasePatcher *patcher, size_t index, PortIdentifer::Direction direction, const string &desc = "");
 	~Port()
 	{
 		cords.clear();
 	}
 	
-	void execute(MessageRef message);
+	MessageRef& requestUpdate();
 	
 	void draw()
 	{
@@ -252,14 +277,33 @@ public:
 	
 	BasePatcher* getPatcher() const { return patcher; }
 	
+	TypeID getType() const { return data->getType(); }
+	
+	const string& getDescription() const { return desc; }
+	
+	// connection
+	int getNumConnected() const { return cords.size(); }
+	bool hasConnect() const { return !cords.empty(); }
+	
 	bool hasConnectTo(Port *port);
+	
+	//data
+	template <typename T>
+	inline void set(const T& v)
+	{
+		setData(Message<T>::create(v));
+	}
+	
+	inline MessageRef& getData() { return data; }
+	inline void setData(const MessageRef& d) { data = d; }
 	
 protected:
 	
 	typedef std::set<PatchCord*> CordContainerType;
 	CordContainerType cords;
 	
-	int index;
+	size_t index;
+	string desc;
 	BasePatcher *patcher;
 	PortIdentifer::Direction direction;
 	
@@ -275,15 +319,20 @@ class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::D
 	
 public:
 	
-	virtual void execute() {}
+	virtual void setupInternal() {}
+	
+	virtual MessageRef executeUpstream() {}
 	
 	virtual Element2D* getUIElement() = 0;
 	
-	virtual int getNumInput() const { return 0; }
-	virtual int getNumOutput() const { return 0; }
+	virtual size_t getNumInput() const { return 0; }
+	virtual size_t getNumOutput() const { return 0; }
 	
-	virtual Port& getInputPort(int index) = 0;
-	virtual Port& getOutputPort(int index) = 0;
+	virtual TypeID getInputType(size_t index) const { return Type2Int<void>(); }
+	virtual TypeID getOutputType(size_t index) { return Type2Int<void>(); }
+
+	virtual Port& getInputPort(size_t index) = 0;
+	virtual Port& getOutputPort(size_t index) = 0;
 	
 	//
 	
@@ -293,28 +342,30 @@ public:
 	
 protected:
 	
-	virtual void inputDataUpdated(int index) = 0;
+	// virtual void inputDataUpdated(size_t index) = 0;
 };
 
 
 
 #pragma mark - Patcher
 
-template <typename T, typename P = ofxInteractivePrimitives::NullParam, typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox>
-class ofxInteractivePrimitives::Patcher : public BasePatcher, public InteractivePrimitiveType
+template <
+	typename T,
+	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
+>
+class ofxInteractivePrimitives::Patcher : public BasePatcher, public InteractivePrimitiveType, public T
 {
 public:
-	
-	P param;
-	
-	Patcher(Node &parent, const P& param = P()) : BasePatcher(), InteractivePrimitiveType(parent), param(param)
+
+	Patcher(Node &parent) : BasePatcher(), InteractivePrimitiveType(parent)
 	{
-		input_data.resize(getNumInput());
-		output_data.resize(getNumOutput());
-		
-		content = (Context*)T::create(input_data, output_data);
-		
-		setupPatcher();
+	}
+	
+	void setupInternal()
+	{
+		disposePatchCords();
+		T::setupPatcher(this);
+		alignPort();
 	}
 	
 	~Patcher()
@@ -330,37 +381,61 @@ public:
 		InteractivePrimitiveType::dispose();
 	}
 	
-	int getNumInput() const { return T::getNumInput(); }
-	TypeID getInputType(int index) const { return T::getInputType(index); }
-	void setInput(int index, MessageRef data) {}
-	
-	int getNumOutput() const { return T::getNumOutput(); }
-	TypeID getOutputType(int index) const { return T::getOutputType(index); }
-	void setOutput(int index, MessageRef data) {}
-	
-	Port& getInputPort(int index) { return input_port.at(index); }
-	Port& getOutputPort(int index) { return output_port.at(index); }
-	
-	void execute()
+	Port& addInput(const string& desc = "")
 	{
-		for (int i = 0; i < getNumInput(); i++)
-		{
-			Port &input_port = getInputPort(i);
-			input_data[i] = input_port.data;
-		}
+		input_port.push_back(Port(this, input_port.size(), PortIdentifer::INPUT, desc));
+		return input_port.back();
+	}
+	
+	Port& addOutput(const string& desc = "")
+	{
+		output_port.push_back(Port(this, input_port.size(), PortIdentifer::OUTPUT, desc));
+		return output_port.back();
+	}
+	
+	size_t getNumInput() const { return input_port.size(); }
+	void setInput(size_t index, MessageRef data) { input_data.at(index) = data; }
+	
+	size_t getNumOutput() const { return output_port.size(); }
+	void setOutput(size_t index, MessageRef data) { output_data.at(index) = data; }
+	
+	inline Port& getInputPort(size_t index) { return input_port.at(index); }
+	inline Port& getOutputPort(size_t index) { return output_port.at(index); }
+	
+	TypeID getInputType(size_t index) const { return Type2Int<void>(); }
+	TypeID getOutputType(size_t index) { return Type2Int<void>(); }
+
+	MessageRef executeUpstream()
+	{
+//		T::begin(this, input_data, output_data);
 		
-		T::execute(this, content, input_data, output_data);
+//		for (int i = 0; i < getNumInput(); i++)
+//		{
+//			Port &input_port = getInputPort(i);
+//			input_port.requestUpdate();
+//			input_data[i] = input_port.data;
+//		}
 		
-		for (int i = 0; i < getNumOutput(); i++)
-		{
-			Port &output_port = getOutputPort(i);
-			output_port.execute(output_data[i]);
-		}
+//		T::end(this, input_data, output_data);
+		
+		T::updatePatcher(this);
+		
+//		for (int i = 0; i < getNumOutput(); i++)
+//		{
+//			Port &output_port = getOutputPort(i);
+//			output_port.data = output_data[i];
+//		}
 	}
 	
 	// ofxIP
 	
-	void update() { InteractivePrimitiveType::update(); T::update(this, content); }
+	void update()
+	{
+		InteractivePrimitiveType::update();
+		
+		if (T::isOutput())
+			T::updatePatcher(this);
+	}
 	
 	void draw()
 	{
@@ -395,7 +470,7 @@ public:
 		const vector<GLuint>& names = this->getCurrentNameStack();
 		if (this->isHover() && names.size() == 2)
 		{
-			int index = names[1];
+			size_t index = names[1];
 			
 			ofVec3f p;
 			
@@ -556,6 +631,11 @@ public:
 	
 	Element2D* getUIElement() { return this; }
 	
+	void updateDisplay()
+	{
+		alignPort();
+	}
+	
 protected:
 	
 	void disposePatchCords()
@@ -570,32 +650,6 @@ protected:
 		
 		for_each(input_port.begin(), input_port.end(), disconnect());
 		for_each(output_port.begin(), output_port.end(), disconnect());
-	}
-	
-	void inputDataUpdated(int index)
-	{
-		execute();
-	}
-	
-	void setupPatcher()
-	{
-		T::layout(this, content);
-		
-		disposePatchCords();
-		input_port.clear();
-		output_port.clear();
-		
-		for (int i = 0; i < getNumInput(); i++)
-		{
-			input_port.push_back(Port(this, i, PortIdentifer::INPUT));
-		}
-		
-		for (int i = 0; i < getNumOutput(); i++)
-		{
-			output_port.push_back(Port(this, i, PortIdentifer::OUTPUT));
-		}
-		
-		alignPort();
 	}
 	
 	virtual void alignPort()
@@ -662,9 +716,6 @@ protected:
 	
 private:
 	
-	typedef typename T::Context Context;
-	Context *content;
-	
 	vector<MessageRef> input_data, output_data;
 	vector<Port> input_port, output_port;
 };
@@ -673,55 +724,44 @@ private:
 
 struct ofxInteractivePrimitives::BaseWrapper
 {
-	static void* create(vector<MessageRef>& input, vector<MessageRef>& output) { return NULL; }
-	
-	static void execute(BasePatcher *patcher, void *context, const vector<MessageRef>& input, vector<MessageRef>& output) {}
-	
-	static void layout(BasePatcher *patcher, void *context) {}
-	static void update(BasePatcher *patcher, void *context) {}
-	
-	static int getNumInput()
-	{
-		return 0;
-	}
-	
-	static TypeID getInputType(int index)
-	{
-		return Type2Int<void>();
-	}
-	
-	static int getNumOutput()
-	{
-		return 0;
-	}
-	
-	static TypeID getOutputType(int index)
-	{
-		return Type2Int<void>();
-	}
+	static void begin(BasePatcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+	static void end(BasePatcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+
+	static void execute(BasePatcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+
+	static void setupPatcher(BasePatcher *self, vector<MessageRef>& input, vector<MessageRef>& output) {}
+	static void update(BasePatcher *self) {}
 };
+
+
+#pragma mark - Wrapper
 
 template <
 	typename T,
-	typename ContextType = void,
-	typename ParamType = ofxInteractivePrimitives::NullParam,
 	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
 >
-struct ofxInteractivePrimitives::AbstructWrapper : public BaseWrapper
+struct ofxInteractivePrimitives::Wrapper : public BaseWrapper
 {
-	typedef ContextType Context;
-	typedef ParamType Param;
 	typedef T Class;
-	typedef ofxInteractivePrimitives::Patcher<Class, Param, InteractivePrimitiveType> Patcher;
+	typedef ofxInteractivePrimitives::Patcher<Class, InteractivePrimitiveType> Patcher;
 	
-	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
+	static Patcher* Create(ofxInteractivePrimitives::Node &parent)
 	{
-		return NULL;
+		Patcher *o = new Patcher(parent);
+		o->setupInternal();
+		return o;
 	}
 	
-	static void execute(Patcher *patcher, ContextType *context, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+//	static void begin(Patcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+//	static void end(Patcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+
+	static void updateRequested(Patcher *self) {}
 	
-	static void layout(Patcher *patcher, ContextType *context) {}
-	static void update(Patcher *patcher, ContextType *context) {}
+	static void setupPatcher(Patcher *self) {}
+	static void updatePatcher(Patcher *self) {}
 	
+	inline static bool isOutput() { return false; }
+	
+//	static int getNumInput() { return 0; }
+//	static int getNumOutput() { return 0; }
 };
