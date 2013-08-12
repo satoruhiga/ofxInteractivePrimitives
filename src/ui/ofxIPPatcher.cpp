@@ -9,7 +9,7 @@ PatchCord::PatchCord(Port *upstream_port, Port *downstream_port) : upstream(upst
 	getUpstream()->addCord(this);
 	getDownstream()->addCord(this);
 	
-	setParent(upstream_port->getPatcher()->getUIElement());
+	setParent(upstream_port->getPatchObject()->getUIElement());
 }
 
 void PatchCord::disconnect()
@@ -26,7 +26,7 @@ void PatchCord::draw()
 	if (!isValid()) return;
 	
 	const ofVec3f p0 = getUpstream()->getPos();
-	const ofVec3f p1 = getUpstream()->getPatcher()->globalToLocalPos(getDownstream()->getGlobalPos());
+	const ofVec3f p1 = getUpstream()->getPatchObject()->globalToLocalPos(getDownstream()->getGlobalPos());
 
 	ofPushStyle();
 	
@@ -48,7 +48,7 @@ void PatchCord::hittest()
 	if (!isValid()) return;
 	
 	const ofVec3f p0 = getUpstream()->getPos();
-	const ofVec3f p1 = getUpstream()->getPatcher()->globalToLocalPos(getDownstream()->getGlobalPos());
+	const ofVec3f p1 = getUpstream()->getPatchObject()->globalToLocalPos(getDownstream()->getGlobalPos());
 	
 	ofSetLineWidth(3);
 	ofLine(p0, p1);
@@ -65,7 +65,7 @@ void PatchCord::keyPressed(int key)
 
 // Port
 
-Port::Port(BasePatcher *patcher, size_t index, PortIdentifer::Direction direction, const string &desc) : patcher(patcher), index(index), direction(direction), desc(desc)
+Port::Port(BasePatchObject *patcher, size_t index, PortIdentifer::Direction direction, const string &desc) : patcher(patcher), index(index), direction(direction), desc(desc)
 {
 }
 

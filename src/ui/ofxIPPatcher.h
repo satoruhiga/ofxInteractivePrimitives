@@ -22,12 +22,12 @@ namespace ofxInteractivePrimitives
 	
 	typedef ofPtr<BaseMessage> MessageRef;
 	
-	class BasePatcher;
+	class BasePatchObject;
 	
 	struct NullType {};
 	
 	template <typename T, typename V>
-	class Patcher;
+	class PatchObject;
 	
 	template <typename T, typename InteractivePrimitiveType>
 	struct Wrapper;
@@ -44,7 +44,7 @@ namespace ofxInteractivePrimitives
 		return (TypeID)&s;
 	};
 	
-	inline bool in_range(const int& a, const int& b, const int& c)
+	inline bool in_range(const unsigned int& a, const unsigned int& b, const unsigned int& c)
 	{
 		return a >= b && a < c;
 	}
@@ -152,7 +152,7 @@ public:
 		type = Type2Int<T>();
 	}
 	
-	Message(const T& value) : value(value)
+	Message(const T& v) : value(v)
 	{
 		type = Type2Int<T>();
 	}
@@ -222,11 +222,11 @@ protected:
 class ofxInteractivePrimitives::Port
 {
 	template <typename T, typename V>
-	friend class Patcher;
+	friend class PatchObject;
 	
 public:
 	
-	Port(BasePatcher *patcher, size_t index, PortIdentifer::Direction direction, const string &desc = "");
+	Port(BasePatchObject *patcher, size_t index, PortIdentifer::Direction direction, const string &desc = "");
 	~Port()
 	{
 		cords.clear();
@@ -269,13 +269,13 @@ public:
 	
 	PortIdentifer::Direction getDirection() const { return direction; }
 	
-	void setRect(const ofRectangle& rect) { this->rect = rect; }
+	void setRect(const ofRectangle& r) { rect = r; }
 	const ofRectangle& getRect() { return rect; }
 	
 	ofVec3f getPos() const { return rect.getCenter(); }
 	ofVec3f getGlobalPos() const;
 	
-	BasePatcher* getPatcher() const { return patcher; }
+	BasePatchObject* getPatchObject() const { return patcher; }
 	
 	TypeID getType() const { return data->getType(); }
 	
@@ -304,7 +304,7 @@ protected:
 	
 	size_t index;
 	string desc;
-	BasePatcher *patcher;
+	BasePatchObject *patcher;
 	PortIdentifer::Direction direction;
 	
 	// data
@@ -313,7 +313,7 @@ protected:
 	ofRectangle rect;
 };
 
-class ofxInteractivePrimitives::BasePatcher : public ofxInteractivePrimitives::DelayedDeletable
+class ofxInteractivePrimitives::BasePatchObject : public ofxInteractivePrimitives::DelayedDeletable
 {
 	friend class Port;
 	
@@ -321,7 +321,7 @@ public:
 	
 	virtual void setupInternal() {}
 	
-	virtual MessageRef executeUpstream() {}
+	virtual MessageRef executeUpstream() { return MessageRef(); }
 	
 	virtual Element2D* getUIElement() = 0;
 	
@@ -347,28 +347,28 @@ protected:
 
 
 
-#pragma mark - Patcher
+#pragma mark - PatchObject
 
 template <
 	typename T,
 	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
 >
-class ofxInteractivePrimitives::Patcher : public BasePatcher, public InteractivePrimitiveType, public T
+class ofxInteractivePrimitives::PatchObject : public BasePatchObject, public InteractivePrimitiveType, public T
 {
 public:
 
-	Patcher(Node &parent) : BasePatcher(), InteractivePrimitiveType(parent)
+	PatchObject(Node &parent) : BasePatchObject(), InteractivePrimitiveType(parent)
 	{
 	}
 	
 	void setupInternal()
 	{
 		disposePatchCords();
-		T::setupPatcher(this);
+		T::setupPatchObject(this);
 		alignPort();
 	}
 	
-	~Patcher()
+	~PatchObject()
 	{
 		this->dispose();
 	}
@@ -418,13 +418,15 @@ public:
 		
 //		T::end(this, input_data, output_data);
 		
-		T::updatePatcher(this);
+		T::updatePatchObject(this);
 		
 //		for (int i = 0; i < getNumOutput(); i++)
 //		{
 //			Port &output_port = getOutputPort(i);
 //			output_port.data = output_data[i];
 //		}
+		
+		return MessageRef();
 	}
 	
 	// ofxIP
@@ -434,7 +436,7 @@ public:
 		InteractivePrimitiveType::update();
 		
 		if (T::isOutput())
-			T::updatePatcher(this);
+			T::updatePatchObject(this);
 	}
 	
 	void draw()
@@ -494,17 +496,17 @@ public:
 		
 		ofFill();
 		
-		for (int i = 0; i < getNumInput(); i++)
+		for (size_t i = 0; i < getNumInput(); i++)
 		{
 			getInputPort(i).draw();
 		}
 		
-		for (int i = 0; i < getNumOutput(); i++)
+		for (size_t i = 0; i < getNumOutput(); i++)
 		{
 			getOutputPort(i).draw();
 		}
 		
-		if (patching_port && patching_port->getPatcher() == this)
+		if (patching_port && patching_port->getPatchObject() == this)
 		{
 			ofLine(patching_port->getPos(), this->globalToLocalPos(ofVec2f(ofGetMouseX(), ofGetMouseY())));
 		}
@@ -521,7 +523,7 @@ public:
 		// input
 		this->pushID(PortIdentifer::INPUT);
 		
-		for (int i = 0; i < getNumInput(); i++)
+		for (size_t i = 0; i < getNumInput(); i++)
 		{
 			this->pushID(i);
 			getInputPort(i).hittest();
@@ -533,7 +535,7 @@ public:
 		// output
 		this->pushID(PortIdentifer::OUTPUT);
 		
-		for (int i = 0; i < getNumOutput(); i++)
+		for (size_t i = 0; i < getNumOutput(); i++)
 		{
 			this->pushID(i);
 			getOutputPort(i).hittest();
@@ -549,6 +551,8 @@ public:
 		{
 			InteractivePrimitiveType::mouseDragged(x, y, button);
 		}
+		
+		T::mouseDragged(this, x, y, button);
 	}
 	
 	void mousePressed(int x, int y, int button)
@@ -571,6 +575,8 @@ public:
 		{
 			InteractivePrimitiveType::mousePressed(x, y, button);
 		}
+		
+		T::mousePressed(this, x, y, button);
 	}
 	
 	void mouseReleased(int x, int y, int button)
@@ -608,6 +614,8 @@ public:
 		
 		__cancel__:;
 		patching_port = NULL;
+		
+		T::mouseReleased(this, x, y, button);
 	}
 	
 	void keyPressed(int key)
@@ -621,6 +629,14 @@ public:
 		{
 			InteractivePrimitiveType::keyPressed(key);
 		}
+		
+		T::keyPressed(this, key);
+	}
+
+	void keyReleased(int key)
+	{
+		InteractivePrimitiveType::keyPressed(key);
+		T::keyReleased(this, key);
 	}
 	
 	//
@@ -654,7 +670,7 @@ protected:
 	
 	virtual void alignPort()
 	{
-		for (int i = 0; i < getNumInput(); i++)
+		for (size_t i = 0; i < getNumInput(); i++)
 		{
 			ofRectangle rect;
 			rect.x = 14 * i;
@@ -665,7 +681,7 @@ protected:
 			getInputPort(i).setRect(rect);
 		}
 		
-		for (int i = 0; i < getNumOutput(); i++)
+		for (size_t i = 0; i < getNumOutput(); i++)
 		{
 			ofRectangle rect;
 			rect.x = 14 * i;
@@ -697,7 +713,7 @@ protected:
 		}
 		
 		// patching oneself
-		if (upstream->getPatcher() == downstream->getPatcher())
+		if (upstream->getPatchObject() == downstream->getPatchObject())
 		{
 			msg = "patching oneself";
 			goto __cancel__;
@@ -710,7 +726,7 @@ protected:
 		
 	__cancel__:
 		
-		ofLogWarning("AbstructPatcher") << "patching failed: " << msg;
+		ofLogWarning("AbstructPatchObject") << "patching failed: " << msg;
 		return NULL;
 	}
 	
@@ -720,48 +736,41 @@ private:
 	vector<Port> input_port, output_port;
 };
 
-#pragma mark - BaseWrapper
-
-struct ofxInteractivePrimitives::BaseWrapper
-{
-	static void begin(BasePatcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
-	static void end(BasePatcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
-
-	static void execute(BasePatcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
-
-	static void setupPatcher(BasePatcher *self, vector<MessageRef>& input, vector<MessageRef>& output) {}
-	static void update(BasePatcher *self) {}
-};
-
-
 #pragma mark - Wrapper
 
 template <
 	typename T,
 	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
 >
-struct ofxInteractivePrimitives::Wrapper : public BaseWrapper
+struct ofxInteractivePrimitives::Wrapper
 {
 	typedef T Class;
-	typedef ofxInteractivePrimitives::Patcher<Class, InteractivePrimitiveType> Patcher;
+	typedef ofxInteractivePrimitives::PatchObject<Class, InteractivePrimitiveType> PatchObject;
 	
-	static Patcher* Create(ofxInteractivePrimitives::Node &parent)
+	static PatchObject* Create(ofxInteractivePrimitives::Node &parent)
 	{
-		Patcher *o = new Patcher(parent);
+		PatchObject *o = new PatchObject(parent);
 		o->setupInternal();
 		return o;
 	}
 	
-//	static void begin(Patcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
-//	static void end(Patcher *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+//	static void begin(PatchObject *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
+//	static void end(PatchObject *self, const vector<MessageRef>& input, vector<MessageRef>& output) {}
 
-	static void updateRequested(Patcher *self) {}
+	static void updateRequested(PatchObject *self) {}
 	
-	static void setupPatcher(Patcher *self) {}
-	static void updatePatcher(Patcher *self) {}
+	static void setupPatchObject(PatchObject *self) {}
+	static void updatePatchObject(PatchObject *self) {}
 	
 	inline static bool isOutput() { return false; }
 	
+	static void mousePressed(PatchObject *self, int x, int y, int button) {}
+	static void mouseReleased(PatchObject *self, int x, int y, int button) {}
+	static void mouseMoved(PatchObject *self, int x, int y) {}
+	static void mouseDragged(PatchObject *self, int x, int y, int button) {}
+	static void keyPressed(PatchObject *self, int key) {}
+	static void keyReleased(PatchObject *self, int key) {}
+
 //	static int getNumInput() { return 0; }
 //	static int getNumOutput() { return 0; }
 };
