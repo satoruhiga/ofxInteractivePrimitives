@@ -22,7 +22,7 @@ namespace ofxInteractivePrimitives
 	
 	typedef ofPtr<BaseMessage> MessageRef;
 	
-	class BasePatchObject;
+	class IPatchObject;
 	
 	struct NullType {};
 	
@@ -52,6 +52,8 @@ namespace ofxInteractivePrimitives
 	static Port *patching_port;
 	
 	struct BaseWrapper;
+	
+	class Patcher;
 }
 
 #pragma mark - DelayedDeletable
@@ -226,7 +228,7 @@ class ofxInteractivePrimitives::Port
 	
 public:
 	
-	Port(BasePatchObject *patcher, size_t index, PortIdentifer::Direction direction, const string &desc = "");
+	Port(IPatchObject *patcher, size_t index, PortIdentifer::Direction direction, const string &desc = "");
 	~Port()
 	{
 		cords.clear();
@@ -275,7 +277,7 @@ public:
 	ofVec3f getPos() const { return rect.getCenter(); }
 	ofVec3f getGlobalPos() const;
 	
-	BasePatchObject* getPatchObject() const { return patcher; }
+	IPatchObject* getPatchObject() const { return patcher; }
 	
 	TypeID getType() const { return data->getType(); }
 	
@@ -304,7 +306,7 @@ protected:
 	
 	size_t index;
 	string desc;
-	BasePatchObject *patcher;
+	IPatchObject *patcher;
 	PortIdentifer::Direction direction;
 	
 	// data
@@ -313,7 +315,7 @@ protected:
 	ofRectangle rect;
 };
 
-class ofxInteractivePrimitives::BasePatchObject : public ofxInteractivePrimitives::DelayedDeletable
+class ofxInteractivePrimitives::IPatchObject : public ofxInteractivePrimitives::DelayedDeletable
 {
 	friend class Port;
 	
@@ -338,6 +340,12 @@ public:
 	
 	virtual ofVec3f localToGlobalPos(const ofVec3f& v) = 0;
 	virtual ofVec3f globalToLocalPos(const ofVec3f& v) = 0;
+	
+	virtual void setPosition(const ofVec3f &v) = 0;
+	void setPosition(float x, float y, float z = 0)
+	{
+		this->setPosition(ofVec3f(x, y, z));
+	}
 	virtual ofVec3f getPosition() = 0;
 	
 protected:
@@ -353,13 +361,11 @@ template <
 	typename T,
 	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
 >
-class ofxInteractivePrimitives::PatchObject : public BasePatchObject, public InteractivePrimitiveType, public T
+class ofxInteractivePrimitives::PatchObject : public IPatchObject, public InteractivePrimitiveType, public T
 {
 public:
 
-	PatchObject(Node &parent) : BasePatchObject(), InteractivePrimitiveType(parent)
-	{
-	}
+	PatchObject(Node &parent) : IPatchObject(), InteractivePrimitiveType(parent) {}
 	
 	void setupInternal()
 	{
@@ -644,6 +650,7 @@ public:
 	ofVec3f localToGlobalPos(const ofVec3f& v) { return InteractivePrimitiveType::localToGlobalPos(v); }
 	ofVec3f globalToLocalPos(const ofVec3f& v) { return InteractivePrimitiveType::globalToLocalPos(v); }
 	ofVec3f getPosition() { return InteractivePrimitiveType::getPosition(); }
+	void setPosition(const ofVec3f &v) { InteractivePrimitiveType::setPosition(v); }
 	
 	Element2D* getUIElement() { return this; }
 	
@@ -773,4 +780,44 @@ struct ofxInteractivePrimitives::Wrapper
 
 //	static int getNumInput() { return 0; }
 //	static int getNumOutput() { return 0; }
+};
+
+#pragma mark - Patcher
+
+class ofxInteractivePrimitives::Patcher : public ofxInteractivePrimitives::RootNode
+{
+public:
+	
+	inline IPatchObject* create(const string &name)
+	{
+		if (object_factory.find(name) == object_factory.end()) return NULL;
+		else return object_factory[name](this);
+	}
+
+	//
+	
+	template <typename T>
+	inline void registerPatchObject(const string &name)
+	{
+		object_factory[name] = &classFactory<T>;
+	}
+	
+	void save(const string &path) {}
+	void load(const string &path) {}
+	
+	// TODO: undo & redo
+	void undo() {}
+	void redo() {}
+	
+protected:
+	
+	typedef IPatchObject* (*ClassFactory)(Patcher *self);
+	map<string, ClassFactory> object_factory;
+	
+	template <typename T>
+	static IPatchObject* classFactory(Patcher *self)
+	{
+		return T::PatchObject::Create(*self);
+	}
+
 };

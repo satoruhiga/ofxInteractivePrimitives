@@ -2,125 +2,86 @@
 
 #include "ofxIPPatcher.h"
 
-ofxInteractivePrimitives::RootNode root;
+ofxInteractivePrimitives::Patcher root;
 
 //
 
 using namespace ofxInteractivePrimitives;
 
-class TestClass
+struct TestClassWrapper : public ofxInteractivePrimitives::Wrapper<TestClassWrapper>
 {
-public:
+	int num;
+	ofVec3f last_pos;
 
-	void test(int i)
+	static void mousePressed(PatchObject *self, int x, int y, int button)
 	{
-		cout << "hello: " << i << endl;
+		self->num = ofRandom(100);
+	}
+
+	static void setupPatchObject(PatchObject *self)
+	{
+		self->setText("hoge");
+		self->addOutput("in 1");
+		
+		self->num = ofRandom(100);
+	}
+	
+	static void updatePatchObject(PatchObject *self)
+	{
+		if (self->getOutputPort(0).hasConnect())
+		{
+			int n = self->getPosition().x;
+			self->getOutputPort(0).set(self->num);
+		}
 	}
 };
 
-struct TestClassWrapper : public ofxInteractivePrimitives::AbstructWrapper<TestClassWrapper>
+struct DispClassWrapper : public ofxInteractivePrimitives::Wrapper<DispClassWrapper>
 {
-	typedef TestClass Context;
-
-	static const char* getName() { return "TestClass"; }
-
-	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
+	static void setupPatchObject(PatchObject *self)
 	{
-		output[0] = Message<ofVec3f>::create(ofVec3f(0));
-
-		return new TestClass;
+		self->setText("Disp");
+		self->addInput("in 0");
 	}
 	
-	static void setupPatcher(Patcher *self, const vector<MessageRef>& input, vector<MessageRef>& output)
+	static void updatePatchObject(PatchObject *self)
 	{
-		self->setText(getName());
+		MessageRef &in = self->getInputPort(0).requestUpdate();
+		int n;
+		if (in && in->get(n))
+		{
+			self->setText(ofToString(n));
+		}
 	}
-
-
-//	static void execute(Patcher<TestClassWrapper> *patcher, Context *context, const vector<MessageRef>& input, vector<MessageRef>& output)
-//	{
-//
-//		Message<ofVec3f> *out0 = output[0]->cast<ofVec3f>();
-//		out0->set(patcher->getPosition());
-//	}
 	
-//	static void update(BasePatcher *patcher, Context *context)
-//	{
-//		patcher->execute();
-//	}
+	static bool isOutput() { return true; }
+};
 
-//	static void layout(Patcher<TestClassWrapper> *patcher, Context *context)
-//	{
-//		patcher->setText(getName());
-//	}
+struct PowWrapper : public ofxInteractivePrimitives::Wrapper<PowWrapper>
+{
+	static void setupPatchObject(PatchObject *self)
+	{
+		self->setText("Pow");
+		self->addInput("in 0");
+		self->addOutput("out 0");
+	}
 	
-	static TypeID getInputType(int index)
+	static void updatePatchObject(PatchObject *self)
 	{
-		return Type2Int<void>();
-	}
-
-	static int getNumOutput()
-	{
-		return 1;
-	}
-
-	static TypeID getOutputType(int index)
-	{
-		return Type2Int<ofVec3f>();
+		MessageRef &in = self->getInputPort(0).requestUpdate();
+		int n;
+		if (in && in->get(n))
+		{
+			n = n * n;
+			self->getOutputPort(0).set(n);
+		}
 	}
 };
 
-struct PrintClassWrapper : public ofxInteractivePrimitives::AbstructWrapper<PrintClassWrapper>
-{
-	typedef TestClass Context;
 
-	static const char* getName() { return "PrintClass"; }
-
-	static void* create(vector<MessageRef>& input, vector<MessageRef>& output)
-	{
-		input[0] = Message<int>::create(42);
-		return NULL;
-	}
-	
-	static void setupPatcher(Patcher *self, const vector<MessageRef>& input, vector<MessageRef>& output)
-	{
-		self->setText(getName());
-	}
-
-
-//	static void execute(Patcher<PrintClassWrapper> *patcher, Context *context, const vector<MessageRef>& input, vector<MessageRef>& output)
-//	{
-//		Message<ofVec3f> *in0 = input[0]->cast<ofVec3f>();
-//		if (in0)
-//		{ofxInteractivePrimitives
-//			stringstream ss;
-//			ss << in0->get();
-//			patcher->setText(ss.str());
-//		}
-//	}
-//	
-//	static void layout(Patcher<PrintClassWrapper> *patcher, Context *context)
-//	{
-//		patcher->setText(getName());
-//	}
-	
-	static void update(Patcher *self)
-	{
-	}
-
-	static int getNumInput()
-	{
-		return 1;
-	}
-
-	static TypeID getInputType(int index)
-	{
-		return Type2Int<int>();
-	}
-};
-
-TestClassWrapper::Patcher *node0;
-PrintClassWrapper::Patcher *node1, *node2;
+ofxInteractivePrimitives::IPatchObject *node0;
+ofxInteractivePrimitives::IPatchObject *node1;
+ofxInteractivePrimitives::IPatchObject *node2;
 
 //--------------------------------------------------------------
 void testApp::setup()
@@ -129,13 +90,20 @@ void testApp::setup()
 	ofSetVerticalSync(true);
 	ofBackground(0);
 
-	node0 = TestClassWrapper::Patcher::Create(root);
-	node1 = PrintClassWrapper::Patcher::Create(root);
-	node2 = PrintClassWrapper::Patcher::Create(root);
+	root.registerPatchObject<TestClassWrapper>("hoge");
+	root.registerPatchObject<DispClassWrapper>("disp");
+	root.registerPatchObject<PowWrapper>("pow");
+	
+	node0 = root.create("hoge");
+	node1 = root.create("disp");
+	root.create("pow");
+	
+//	node0 = root.create<TestClassWrapper>();
+//	node1 = root.create<DispClassWrapper>();
+//	node2 = root.create<PowWrapper>();
 
 	node0->setPosition(200, 200, 0);
 	node1->setPosition(200, 300, 0);
-	node2->setPosition(300, 300, 0);
 }
 
 //--------------------------------------------------------------

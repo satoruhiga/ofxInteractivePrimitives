@@ -65,7 +65,7 @@ void PatchCord::keyPressed(int key)
 
 // Port
 
-Port::Port(BasePatchObject *patcher, size_t index, PortIdentifer::Direction direction, const string &desc) : patcher(patcher), index(index), direction(direction), desc(desc)
+Port::Port(IPatchObject *patcher, size_t index, PortIdentifer::Direction direction, const string &desc) : patcher(patcher), index(index), direction(direction), desc(desc)
 {
 }
 
