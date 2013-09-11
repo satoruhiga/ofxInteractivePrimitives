@@ -50,8 +50,6 @@ class Manager
 {
 public:
 	
-	void setup(int num_markers);
-	
 	void update();
 	void draw();
 	

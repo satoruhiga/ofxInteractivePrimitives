@@ -144,14 +144,6 @@ void Manager::getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, i
 											  ofxCameraCalibUtils::CameraParam::Extrinsic(rvecs[0], tvecs[0]));
 }
 
-void Manager::setup(int num_markers)
-{
-	for (int i = 0; i < num_markers; i++)
-	{
-		addMarker();
-	}
-}
-
 void Manager::update()
 {
 	root.update();
@@ -165,7 +157,7 @@ void Manager::draw()
 	{
 		ofPushStyle();
 		
-		ofSetLineWidth(4);
+		ofSetLineWidth(3);
 		
 		ofSetColor(255, 0, 0);
 		
@@ -173,7 +165,6 @@ void Manager::draw()
 		ofNoFill();
 		ofCircle(p, 40);
 		
-		ofFill();
 		ofCircle(p, 10);
 		
 		ofLine(-10000, p.y, 10000, p.y);
@@ -247,11 +238,15 @@ void Manager::load(string path)
 	config->loadEmpty("markers");
 	config->load(ofToDataPath(path));
 	
-	for (int i = 0; i < markers.size(); i++)
+	vector<string> keys;
+	config->keys(keys);
+	
+	clear();
+	
+	for (int i = 0; i < keys.size(); i++)
 	{
-		Marker* o = markers[i];
-		
-		string m = "marker[" + ofToString(i) + "]";
+		Marker* o = addMarker();
+		string m = keys[i];
 		
 		o->setPosition(config->getDouble(m + ".image[@x]", 0),
 					   config->getDouble(m + ".image[@y]", 0),
@@ -261,7 +256,6 @@ void Manager::load(string path)
 						  config->getDouble(m + ".object[@y]", 0),
 						  config->getDouble(m + ".object[@z]", 0));
 	}
-	
 }
 
 void Manager::save(string path)
