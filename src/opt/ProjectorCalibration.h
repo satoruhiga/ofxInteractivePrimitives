@@ -31,10 +31,11 @@ public:
 	
 	void keyPressed(int key);
 	
-	ofVec3f& getObjectPoint() { return object_pos; }
-	const ofVec3f& getObjectPoint() const { return object_pos; }
+	ofVec3f getObjectPoint() const { return object_pos; }
+	void setObjectPosition(const ofVec3f& v) { object_pos = v; }
 	
-	
+	ofVec3f getImagePoint() const { return this->getPosition(); }
+	void setImagePoint(const ofVec3f& v) { this->setPosition(v); }
 	
 protected:
 	
@@ -50,32 +51,29 @@ class Manager
 {
 public:
 	
+	void setup(size_t num_markers);
+	
 	void update();
 	void draw();
 	
 	void load(string path);
 	void save(string path);
 	
-	bool getNeedUpdateCalibration() const;
-	
 	ofMatrix4x4 getHomography();
 	void getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, int width, int height, float initial_fovY = 60);
-	
-	void setImagePoint(int x, int y);
 
+	void setSelectedImagePoint(int x, int y);
 	Marker* getSelectedMarker();
 	
-	Marker* operator[](size_t idx) const { return markers[idx]; }
+	Marker* operator[](size_t idx) const { return markers[idx].get(); }
 	size_t size() const { return markers.size(); }
 	
-	Marker* addMarker();
-	void removeMarker(Marker* marker);
-	void clear();
+	bool getNeedUpdateCalibration() const;
 	
 protected:
 	
 	ofxInteractivePrimitives::RootNode root;
-	vector<Marker*> markers;
+	vector<Marker::Ref> markers;
 	
 	void markUpdated();
 

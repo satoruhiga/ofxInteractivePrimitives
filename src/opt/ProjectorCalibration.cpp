@@ -53,9 +53,19 @@ void Marker::keyPressed(int key)
 
 #pragma mark - Manager
 
+void Manager::setup(size_t num_markers)
+{
+	markers.resize(num_markers);
+	
+	for (int i = 0; i < num_markers; i++)
+	{
+		markers[i] = Marker::Ref(new Marker(i, root));
+	}
+}
+
 ofMatrix4x4 Manager::getHomography()
 {
-	assert(markers.size() >= 6);
+	assert(markers.size() >= 4);
 	
 	markUpdated();
 	
@@ -65,7 +75,7 @@ ofMatrix4x4 Manager::getHomography()
 	vector<Point2f> srcPoints, dstPoints;
 	for(int i = 0; i < markers.size(); i++)
 	{
-		Marker* o = markers[i];
+		Marker* o = markers[i].get();
 		
 		dstPoints.push_back(Point2f(o->getX(), o->getY()));
 		srcPoints.push_back(Point2f(o->object_pos.x, o->object_pos.y));
@@ -89,7 +99,7 @@ void Manager::getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, i
 	
 	for(int i = 0; i < markers.size(); i++)
 	{
-		Marker* o = markers[i];
+		Marker* o = markers[i].get();
 		object_points[0].push_back(toCv(o->object_pos));
 		image_points[0].push_back(toCv((ofVec2f)o->getPosition()));
 	}
@@ -178,7 +188,7 @@ void Manager::draw()
 	ofPopStyle();
 }
 
-void Manager::setImagePoint(int x, int y)
+void Manager::setSelectedImagePoint(int x, int y)
 {
 	Marker *m = (Marker*)root.getFocusObject();
 	if (m) m->object_pos.set(x, y, 0);
@@ -187,27 +197,6 @@ void Manager::setImagePoint(int x, int y)
 Marker* Manager::getSelectedMarker()
 {
 	return (Marker*)root.getFocusObject();
-}
-
-Marker* Manager::addMarker()
-{
-	Marker *o = new Marker(markers.size(), root);
-	markers.push_back(o);
-	return o;
-}
-
-void Manager::removeMarker(Marker* marker)
-{
-	vector<Marker*>::iterator it = remove(markers.begin(), markers.end(), marker);
-	markers.erase(it, markers.end());
-	delete marker;
-}
-
-void Manager::clear()
-{
-	for (int i = 0; i < markers.size(); i++)
-		delete markers[i];
-	markers.clear();
 }
 
 bool Manager::getNeedUpdateCalibration() const
@@ -240,12 +229,12 @@ void Manager::load(string path)
 	
 	vector<string> keys;
 	config->keys(keys);
-	
-	clear();
+
+	assert(keys.size() == markers.size());
 	
 	for (int i = 0; i < keys.size(); i++)
 	{
-		Marker* o = addMarker();
+		Marker* o = (*this)[i];
 		string m = keys[i];
 		
 		o->setPosition(config->getDouble(m + ".image[@x]", 0),
@@ -265,7 +254,7 @@ void Manager::save(string path)
 	
 	for (int i = 0; i < markers.size(); i++)
 	{
-		Marker* o = markers[i];
+		Marker* o = (*this)[i];
 		
 		string m = "marker[" + ofToString(i) + "]";
 		
