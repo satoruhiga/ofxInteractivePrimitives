@@ -85,75 +85,6 @@ ofMatrix4x4 Manager::getHomography()
 	return homography2glModelViewMatrix(homography);
 }
 
-void Manager::getEstimatedCameraPose(ofxCameraCalibUtils::CameraParam &params, int width, int height, float initial_fovY)
-{
-	assert(markers.size() >= 6);
-	
-	markUpdated();
-	
-	using namespace ofxCv;
-	using namespace cv;
-	
-	vector< vector<cv::Point3f> > object_points(1);
-	vector< vector<cv::Point2f> > image_points(1);
-	
-	for(int i = 0; i < markers.size(); i++)
-	{
-		Marker* o = markers[i].get();
-		object_points[0].push_back(toCv(o->object_pos));
-		image_points[0].push_back(toCv((ofVec2f)o->getPosition()));
-	}
-	
-	cv::Mat dist_coeffs = cv::Mat::zeros(8, 1, CV_64F);
-	cv::Size image_size(width, height);
-	
-	float f = (image_size.height / 2) * tan(ofDegToRad(90 - initial_fovY / 2));
-	cv::Mat camera_matrix = (cv::Mat_<double>(3, 3) <<
-					 f, 0, width / 2,
-					 0, f, height / 2,
-					 0, 0, 1);
-	
-	vector<cv::Mat> rvecs;
-	vector<cv::Mat> tvecs;
-	
-	int flags = 0;
-	flags |= CV_CALIB_USE_INTRINSIC_GUESS;
-	flags |= CV_CALIB_FIX_PRINCIPAL_POINT | CV_CALIB_FIX_ASPECT_RATIO;
-	flags |= CV_CALIB_ZERO_TANGENT_DIST;
-	flags |= (CV_CALIB_FIX_K1 | CV_CALIB_FIX_K2 | CV_CALIB_FIX_K3 | CV_CALIB_FIX_K4 | CV_CALIB_FIX_K5 | CV_CALIB_FIX_K6 | CV_CALIB_RATIONAL_MODEL);
-	
-	float rms = cv::calibrateCamera(object_points,
-									image_points,
-									image_size,
-									camera_matrix,
-									dist_coeffs,
-									rvecs,
-									tvecs,
-									flags);
-
-	cout << "rms: " << rms << endl;
-	
-	{
-		cv::Point2d principal_point, fov;
-		double aspect, focal_length;
-
-		cv::calibrationMatrixValues(camera_matrix,
-									image_size,
-									0,
-									0,
-									fov.x,
-									fov.y,
-									focal_length,
-									principal_point,
-									aspect);
-		
-		cout << "fov: " << fov << endl;
-	}
-	
-	params = ofxCameraCalibUtils::CameraParam(ofxCameraCalibUtils::CameraParam::Intrinsics(camera_matrix, image_size),
-											  ofxCameraCalibUtils::CameraParam::Extrinsic(rvecs[0], tvecs[0]));
-}
-
 void Manager::update()
 {
 	root.update();
@@ -215,6 +146,57 @@ void Manager::markUpdated()
 		if (markers[i]->need_update_calib)
 			markers[i]->need_update_calib = false;
 	}
+}
+
+float Manager::getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec)
+{
+	assert(markers.size() >= 6);
+	
+	markUpdated();
+	
+	using namespace ofxCv;
+	using namespace cv;
+	
+	vector< vector<cv::Point3f> > object_points(1);
+	vector< vector<cv::Point2f> > image_points(1);
+	
+	for(int i = 0; i < markers.size(); i++)
+	{
+		Marker* o = markers[i].get();
+		object_points[0].push_back(toCv(o->object_pos));
+		image_points[0].push_back(toCv((ofVec2f)o->getPosition()));
+	}
+	
+	cv::Mat dist_coeffs = cv::Mat::zeros(8, 1, CV_64F);
+	
+	float f = (image_size.height / 2) * tan(ofDegToRad(90 - 60.0f / 2));
+	camera_matrix = (cv::Mat_<double>(3, 3) <<
+							 f, 0, image_size.width / 2,
+							 0, f, image_size.height / 2,
+							 0, 0, 1);
+	
+	vector<cv::Mat> rvecs;
+	vector<cv::Mat> tvecs;
+	
+	int flags = 0;
+	flags |= CV_CALIB_USE_INTRINSIC_GUESS;
+	flags |= CV_CALIB_FIX_PRINCIPAL_POINT | CV_CALIB_FIX_ASPECT_RATIO;
+	flags |= CV_CALIB_ZERO_TANGENT_DIST;
+	flags |= (CV_CALIB_FIX_K1 | CV_CALIB_FIX_K2 | CV_CALIB_FIX_K3 | CV_CALIB_FIX_K4 | CV_CALIB_FIX_K5 | CV_CALIB_FIX_K6 | CV_CALIB_RATIONAL_MODEL);
+	
+	float rms = cv::calibrateCamera(object_points,
+									image_points,
+									image_size,
+									camera_matrix,
+									dist_coeffs,
+									rvecs,
+									tvecs,
+									flags);
+	
+	rvec = rvecs[0];
+	tvec = tvecs[0];
+	
+	return rms;
 }
 
 // IO
