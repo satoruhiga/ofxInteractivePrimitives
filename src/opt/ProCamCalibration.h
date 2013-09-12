@@ -6,7 +6,7 @@
 
 #define PROJECTOR_CALIBRATION_BEGIN_NAMESPACE \
 namespace ofxInteractivePrimitives { \
-namespace ProjectorCalibration {
+namespace ProCamCalibration {
 
 #define PROJECTOR_CALIBRATION_END_NAMESPACE \
 } \

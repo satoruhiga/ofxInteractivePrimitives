@@ -1,4 +1,4 @@
-#include "ProjectorCalibration.h"
+#include "ProCamCalibration.h"
 
 #include "Poco/Util/XMLConfiguration.h"
 
