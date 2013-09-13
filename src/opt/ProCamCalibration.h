@@ -1,8 +1,11 @@
 #pragma once
 
 #include "ofxInteractivePrimitives.h"
+#include "ofxCv.h"
 
+#ifdef USE_OFX_CAMERA_CALIB_UTILS
 #include "ofxCameraCalibUtils.h"
+#endif
 
 #define PROJECTOR_CALIBRATION_BEGIN_NAMESPACE \
 namespace ofxInteractivePrimitives { \
