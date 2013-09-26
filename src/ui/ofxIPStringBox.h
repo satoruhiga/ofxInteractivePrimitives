@@ -8,23 +8,48 @@
 
 namespace ofxInteractivePrimitives
 {
+	class String;
 	class StringBox;
 	class DraggableStringBox;
 }
 
-class ofxInteractivePrimitives::StringBox : public Element2D
+class ofxInteractivePrimitives::String : public Element2D
+{
+public:
+	
+	enum
+	{
+		CHAR_WIDTH = 8,
+		CHAR_HEIGHT = 9,
+		NEWLINE_HEIGHT = 5
+	};
+
+	String(Node &parent) : Element2D(parent) {}
+	
+	void draw()
+	{
+		ofPushStyle();
+		ofDrawBitmapString(text, 1, CHAR_HEIGHT + 1);
+		ofPopStyle();
+	}
+
+	void setText(const string& s) { text = s; onUpdateText(); }
+	const string& getText() const { return text; }
+	
+protected:
+	
+	string text;
+	
+	virtual void onUpdateText() {}
+};
+
+class ofxInteractivePrimitives::StringBox : public String
 {
 public:
 
-	enum
-	{
-		MARGIN = 1,
-		BITMAP_CHAR_WIDTH = 8,
-		BITMAP_CHAR_HEIGHT = 9,
-		BITMAP_CHAR_NEWLINE_HEIGHT = 5
-	};
+	typedef String Font;
 
-	StringBox(Node &parent) : Element2D(parent) {}
+	StringBox(Node &parent) : String(parent), margin(1) {}
 
 	void draw()
 	{
@@ -33,7 +58,7 @@ public:
 		ofNoFill();
 		ofRect(getContentRect());
 
-		ofDrawBitmapString(text, MARGIN, BITMAP_CHAR_HEIGHT + MARGIN);
+		ofDrawBitmapString(text, margin, Font::CHAR_HEIGHT + margin);
 		
 		ofPopStyle();
 	}
@@ -44,21 +69,29 @@ public:
 		ofRect(getContentRect());
 	}
 
-	void setText(const string& s)
-	{
-		text = s;
+	float getMargin() const { return margin; }
+	void setMargin(float v) { margin = v; updateContentRect(); }
+	
+protected:
 
+	void onUpdateText()
+	{
+		updateContentRect();
+	}
+	
+	void updateContentRect()
+	{
 		int w = 0;
 		int h = 1;
 		int max_w = 0;
-
+		
 		for (int i = 0; i < text.size(); i++)
 		{
 			char c = text[i];
 			if (c == '\n')
 			{
 				max_w = max(max_w, w);
-
+				
 				w = 0;
 				h++;
 			}
@@ -67,25 +100,23 @@ public:
 				w++;
 			}
 		}
-
+		
 		max_w = max(max_w, w);
 		
 		ofRectangle rect;
 		rect.y = -1;
-		rect.width = max_w * BITMAP_CHAR_WIDTH;
-		rect.height = h * BITMAP_CHAR_HEIGHT + (h - 1) * BITMAP_CHAR_NEWLINE_HEIGHT;
-
-		rect.width += MARGIN * 2 + 1;
-		rect.height += MARGIN * 2 + 1;
+		rect.width = max_w * Font::CHAR_WIDTH;
+		rect.height = h * Font::CHAR_HEIGHT + (h - 1) * Font::NEWLINE_HEIGHT;
+		
+		rect.width += margin * 2 + 1;
+		rect.height += margin * 2 + 1;
 		
 		setContentRect(rect);
 	}
-
-	const string& getText() const { return text; }
 	
-protected:
-
-	string text;
+private:
+	
+	float margin;
 
 };
 
@@ -101,3 +132,19 @@ public:
 		move(getMouseDelta());
 	}
 };
+
+
+namespace ofxInteractivePrimitives
+{
+	class String;
+	class StringBox;
+	class DraggableStringBox;
+	
+	inline String* makeString(Node &parent, const string& text, const ofVec2f& pos = ofVec2f(0, 0))
+	{
+		String* o = new String(parent);
+		o->setText(text);
+		o->setPosition(pos);
+		return o;
+	}
+}
