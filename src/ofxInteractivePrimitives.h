@@ -11,6 +11,8 @@ namespace ofxInteractivePrimitives
 	class RootNode;
 }
 
+namespace ofxIP = ofxInteractivePrimitives;
+
 class ofxInteractivePrimitives::Node : public ofNode
 {
 	friend class RootNode;
