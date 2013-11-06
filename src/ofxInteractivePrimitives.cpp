@@ -539,6 +539,14 @@ void Node::clearParent()
 	ofNode::clearParent();
 }
 
+void Node::clearChildren()
+{
+	while (getChildren().size())
+	{
+		getChildren()[0]->clearParent();
+	}
+}
+
 void Node::clearState()
 {
 	hover = false;

@@ -53,6 +53,8 @@ void Marker::keyPressed(int key)
 
 void Manager::setup(size_t num_markers)
 {
+	clearChildren();
+	
 	markers.resize(num_markers);
 	
 	for (int i = 0; i < num_markers; i++)

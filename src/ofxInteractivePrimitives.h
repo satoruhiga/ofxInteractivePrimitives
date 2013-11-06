@@ -22,10 +22,9 @@ class RootNode;
 class Node : public ofNode
 {
 	friend class RootNode;
-
-public:
-
 	friend class Context;
+	
+public:
 
 	Node();
 	virtual ~Node();
@@ -79,7 +78,7 @@ public:
 	virtual void keyPressed(int key) {}
 	virtual void keyReleased(int key) {}
 
-	//
+public: // hierarchy
 
 	void setParent(Node *o);
 	Node* getParent() { return (Node*)ofNode::getParent(); }
@@ -87,8 +86,9 @@ public:
 	void clearParent();
 	
 	vector<Node*> getChildren() { return children; }
+	void clearChildren();
 	
-	//
+public: // state
 
 	inline void setVisible(bool v) { visible = v; }
 	inline bool getVisible() const { return visible; }
@@ -105,8 +105,7 @@ public:
 	inline bool getEnable() { return enable; }
 	inline bool isEnable() { return enable; }
 	
-
-	// utils
+public: // utils
 
 	ofVec2f getMouseDelta();
 	ofVec3f localToGlobalPos(const ofVec3f& v);
