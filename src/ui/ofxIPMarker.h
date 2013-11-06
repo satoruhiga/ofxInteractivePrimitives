@@ -4,12 +4,9 @@
 
 #include "ofxInteractivePrimitives.h"
 
-namespace ofxInteractivePrimitives
-{
-	class Marker;
-}
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-class ofxInteractivePrimitives::Marker : public Node
+class Marker : public Node
 {
 public:
 
@@ -66,3 +63,5 @@ protected:
 	string text;
 
 };
+
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

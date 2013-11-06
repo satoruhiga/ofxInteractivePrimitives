@@ -1,8 +1,8 @@
 #include "ofxInteractivePrimitives.h"
 
-using namespace ofxInteractivePrimitives;
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-class ofxInteractivePrimitives::Context
+class Context
 {
 public:
 
@@ -697,4 +697,4 @@ void RootNode::disableAllEvent()
 	getContext()->disableAllEvent();
 }
 
-
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

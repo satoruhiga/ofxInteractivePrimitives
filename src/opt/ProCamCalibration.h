@@ -3,23 +3,12 @@
 #include "ofxInteractivePrimitives.h"
 #include "ofxCv.h"
 
-#ifdef USE_OFX_CAMERA_CALIB_UTILS
-#include "ofxCameraCalibUtils.h"
-#endif
-
-#define PROJECTOR_CALIBRATION_BEGIN_NAMESPACE \
-namespace ofxInteractivePrimitives { \
-namespace ProCamCalibration {
-
-#define PROJECTOR_CALIBRATION_END_NAMESPACE \
-} \
-}
+#define PROJECTOR_CALIBRATION_BEGIN_NAMESPACE namespace ofx { namespace InteractivePrimitives { namespace ProCamCalibration {
+#define PROJECTOR_CALIBRATION_END_NAMESPACE } } }
 
 PROJECTOR_CALIBRATION_BEGIN_NAMESPACE
 
 class Manager;
-
-#ifndef USE_OFX_CAMERA_CALIB_UTILS
 
 struct CameraParam
 {
@@ -100,8 +89,6 @@ struct CameraParam
 	}
 };
 
-#endif
-
 class Marker : public ofxInteractivePrimitives::Marker
 {
 	friend class Manager;
@@ -149,11 +136,7 @@ public:
 	
 	float getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec);
 
-#ifdef USE_OFX_CAMERA_CALIB_UTILS
-	float getEstimatedCameraPose(int width, int height, ofxCameraCalibUtils::CameraParam &params);
-#else
 	float getEstimatedCameraPose(int width, int height, CameraParam &param);
-#endif
 
 	void setSelectedImagePoint(int x, int y);
 	Marker* getSelectedMarker();
@@ -172,23 +155,6 @@ protected:
 
 };
 
-#ifdef USE_OFX_CAMERA_CALIB_UTILS
-
-inline float Manager::getEstimatedCameraPose(int width, int height, ofxCameraCalibUtils::CameraParam &params)
-{
-	cv::Mat camera_matrix, rvec, tvec;
-	cv::Size image_size(width, height);
-	
-	float rms = getEstimatedCameraPose(image_size, camera_matrix, rvec, tvec);
-	
-	params = ofxCameraCalibUtils::CameraParam(ofxCameraCalibUtils::CameraParam::Intrinsics(camera_matrix, image_size),
-											  ofxCameraCalibUtils::CameraParam::Extrinsic(rvec, tvec));
-	
-	return rms;
-}
-
-#else
-
 inline float Manager::getEstimatedCameraPose(int width, int height, CameraParam &param)
 {
 	cv::Mat camera_matrix, rvec, tvec;
@@ -200,7 +166,5 @@ inline float Manager::getEstimatedCameraPose(int width, int height, CameraParam 
 	
 	return rms;
 }
-
-#endif
 
 PROJECTOR_CALIBRATION_END_NAMESPACE

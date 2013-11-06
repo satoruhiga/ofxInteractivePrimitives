@@ -1,6 +1,6 @@
 #include "ofxIPPatcher.h"
 
-using namespace ofxInteractivePrimitives;
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
 // PatchCord
 
@@ -116,3 +116,5 @@ bool Port::hasConnectTo(Port *port)
 	
 	return false;
 }
+
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

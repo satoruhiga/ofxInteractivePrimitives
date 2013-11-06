@@ -4,14 +4,9 @@
 
 #include "ofxIPStringBox.h"
 
-namespace ofxInteractivePrimitives
-{
-	class Slider;
-}
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-using namespace ofxInteractivePrimitives;
-
-class ofxInteractivePrimitives::Slider : public Element2D
+class Slider : public Element2D
 {
 public:
 	
@@ -109,3 +104,5 @@ protected:
 		}
 	}
 };
+
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

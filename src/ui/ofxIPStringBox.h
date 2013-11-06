@@ -6,14 +6,9 @@
 
 #include "ofxIPBaseElement.h"
 
-namespace ofxInteractivePrimitives
-{
-	class String;
-	class StringBox;
-	class DraggableStringBox;
-}
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-class ofxInteractivePrimitives::String : public Element2D
+class String : public Element2D
 {
 public:
 	
@@ -43,7 +38,7 @@ protected:
 	virtual void onUpdateText() {}
 };
 
-class ofxInteractivePrimitives::StringBox : public String
+class StringBox : public String
 {
 public:
 
@@ -121,7 +116,7 @@ private:
 };
 
 
-class ofxInteractivePrimitives::DraggableStringBox : public StringBox
+class DraggableStringBox : public StringBox
 {
 public:
 	
@@ -133,18 +128,14 @@ public:
 	}
 };
 
+//
 
-namespace ofxInteractivePrimitives
+inline String* makeString(Node &parent, const string& text, const ofVec2f& pos = ofVec2f(0, 0))
 {
-	class String;
-	class StringBox;
-	class DraggableStringBox;
-	
-	inline String* makeString(Node &parent, const string& text, const ofVec2f& pos = ofVec2f(0, 0))
-	{
-		String* o = new String(parent);
-		o->setText(text);
-		o->setPosition(pos);
-		return o;
-	}
+	String* o = new String(parent);
+	o->setText(text);
+	o->setPosition(pos);
+	return o;
 }
+
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

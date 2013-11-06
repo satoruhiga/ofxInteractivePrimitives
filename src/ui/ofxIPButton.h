@@ -4,14 +4,9 @@
 
 #include "ofxIPStringBox.h"
 
-namespace ofxInteractivePrimitives
-{
-	class Button;
-	
-	Button* makeButton(Node &parent, const string& label, const ofVec2f& pos = ofVec2f(0, 0), float margin = 2);
-}
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-class ofxInteractivePrimitives::Button : public StringBox
+class Button : public StringBox
 {
 public:
 	
@@ -58,7 +53,9 @@ public:
 	}
 };
 
-inline ofxInteractivePrimitives::Button* ofxInteractivePrimitives::makeButton(Node &parent, const string& label, const ofVec2f& pos, float margin)
+//
+
+inline Button* makeButton(Node &parent, const string& label, const ofVec2f& pos, float margin)
 {
 	Button* o = new Button(parent);
 	o->setPosition(pos);
@@ -67,3 +64,4 @@ inline ofxInteractivePrimitives::Button* ofxInteractivePrimitives::makeButton(No
 	return o;
 }
 
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

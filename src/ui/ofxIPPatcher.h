@@ -7,56 +7,54 @@
 
 #include <set>
 
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-namespace ofxInteractivePrimitives
+struct PortIdentifer;
+
+class Port;
+class PatchCord;
+
+class BaseMessage;
+
+template <typename T>
+class Message;
+
+typedef ofPtr<BaseMessage> MessageRef;
+
+class BasePatchObject;
+
+struct NullType {};
+
+template <typename T, typename V>
+class PatchObject;
+
+template <typename T, typename InteractivePrimitiveType>
+struct Wrapper;
+
+struct DelayedDeletable;
+
+typedef unsigned long TypeID;
+
+// TODO: more better RTTI method
+template <typename T>
+TypeID Type2Int()
 {
-	struct PortIdentifer;
-	
-	class Port;
-	class PatchCord;
-	
-	class BaseMessage;
-	
-	template <typename T>
-	class Message;
-	
-	typedef ofPtr<BaseMessage> MessageRef;
-	
-	class BasePatchObject;
-	
-	struct NullType {};
-	
-	template <typename T, typename V>
-	class PatchObject;
-	
-	template <typename T, typename InteractivePrimitiveType>
-	struct Wrapper;
+	const static unsigned int s = 0;
+	return (TypeID)&s;
+};
 
-	struct DelayedDeletable;
-	
-	typedef unsigned long TypeID;
-	
-	// TODO: more better RTTI method
-	template <typename T>
-	TypeID Type2Int()
-	{
-		const static unsigned int s = 0;
-		return (TypeID)&s;
-	};
-	
-	inline bool in_range(const unsigned int& a, const unsigned int& b, const unsigned int& c)
-	{
-		return a >= b && a < c;
-	}
-	
-	static Port *patching_port;
-	
-	struct BaseWrapper;
+inline bool in_range(const unsigned int& a, const unsigned int& b, const unsigned int& c)
+{
+	return a >= b && a < c;
 }
+
+static Port *patching_port;
+
+struct BaseWrapper;
 
 #pragma mark - DelayedDeletable
 
-struct ofxInteractivePrimitives::DelayedDeletable
+struct DelayedDeletable
 {
 public:
 	
@@ -105,7 +103,7 @@ private:
 
 #pragma mark - BaseMessage
 
-class ofxInteractivePrimitives::BaseMessage : public DelayedDeletable
+class BaseMessage : public DelayedDeletable
 {
 public:
 	
@@ -143,7 +141,7 @@ protected:
 #pragma mark - Message
 
 template <typename T>
-class ofxInteractivePrimitives::Message : public BaseMessage
+class Message : public BaseMessage
 {
 public:
 	
@@ -179,7 +177,7 @@ private:
 
 #pragma mark - PortIdentifer
 
-struct ofxInteractivePrimitives::PortIdentifer
+struct PortIdentifer
 {
 	enum Direction
 	{
@@ -190,7 +188,7 @@ struct ofxInteractivePrimitives::PortIdentifer
 
 #pragma mark - PatchCord
 
-class ofxInteractivePrimitives::PatchCord : public Node, public DelayedDeletable
+class PatchCord : public Node, public DelayedDeletable
 {
 	friend class Port;
 	
@@ -219,7 +217,7 @@ protected:
 
 #pragma mark - Port
 
-class ofxInteractivePrimitives::Port
+class Port
 {
 	template <typename T, typename V>
 	friend class PatchObject;
@@ -313,7 +311,7 @@ protected:
 	ofRectangle rect;
 };
 
-class ofxInteractivePrimitives::BasePatchObject : public ofxInteractivePrimitives::DelayedDeletable
+class BasePatchObject : public DelayedDeletable
 {
 	friend class Port;
 	
@@ -351,9 +349,9 @@ protected:
 
 template <
 	typename T,
-	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
+	typename InteractivePrimitiveType = DraggableStringBox
 >
-class ofxInteractivePrimitives::PatchObject : public BasePatchObject, public InteractivePrimitiveType, public T
+class PatchObject : public BasePatchObject, public InteractivePrimitiveType, public T
 {
 public:
 
@@ -740,14 +738,14 @@ private:
 
 template <
 	typename T,
-	typename InteractivePrimitiveType = ofxInteractivePrimitives::DraggableStringBox
+	typename InteractivePrimitiveType = DraggableStringBox
 >
-struct ofxInteractivePrimitives::Wrapper
+struct Wrapper
 {
 	typedef T Class;
-	typedef ofxInteractivePrimitives::PatchObject<Class, InteractivePrimitiveType> PatchObject;
+	typedef PatchObject<Class, InteractivePrimitiveType> PatchObject;
 	
-	static PatchObject* Create(ofxInteractivePrimitives::Node &parent)
+	static PatchObject* Create(Node &parent)
 	{
 		PatchObject *o = new PatchObject(parent);
 		o->setupInternal();
@@ -774,3 +772,5 @@ struct ofxInteractivePrimitives::Wrapper
 //	static int getNumInput() { return 0; }
 //	static int getNumOutput() { return 0; }
 };
+
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

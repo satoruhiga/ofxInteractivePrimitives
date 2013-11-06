@@ -2,12 +2,9 @@
 
 #include "ofxInteractivePrimitives.h"
 
-namespace ofxInteractivePrimitives
-{
-	class Element2D;
-}
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
 
-class ofxInteractivePrimitives::Element2D : public Node
+class Element2D : public Node
 {
 public:
 
@@ -29,3 +26,5 @@ private:
 	ofRectangle rect;
 	
 };
+
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE

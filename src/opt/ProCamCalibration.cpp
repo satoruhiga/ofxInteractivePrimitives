@@ -35,8 +35,6 @@ void Marker::update()
 		last_position = getPosition();
 		need_update_calib = true;
 	}
-	
-	// cout << need_update_calib << endl;
 }
 
 void Marker::keyPressed(int key)

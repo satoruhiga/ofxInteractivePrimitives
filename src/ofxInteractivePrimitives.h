@@ -2,18 +2,24 @@
 
 #include "ofMain.h"
 
-#include <assert.h>
+#define OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE namespace ofx { namespace InteractivePrimitives {
+#define OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE } }
 
-namespace ofxInteractivePrimitives
-{
-	class Context;
-	class Node;
-	class RootNode;
-}
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE
 
+namespace ofxInteractivePrimitives = ofx::InteractivePrimitives;
 namespace ofxIP = ofxInteractivePrimitives;
 
-class ofxInteractivePrimitives::Node : public ofNode
+#include <assert.h>
+
+OFX_INTERACTIVE_PRIMITIVES_START_NAMESPACE
+
+class Context;
+class Node;
+class RootNode;
+
+class Node : public ofNode
 {
 	friend class RootNode;
 
@@ -135,7 +141,7 @@ private:
 
 };
 
-class ofxInteractivePrimitives::RootNode : public ofxInteractivePrimitives::Node
+class RootNode : public Node
 {
 public:
 
@@ -160,6 +166,7 @@ private:
 	Context *context;
 };
 
+OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE
 
 // primitives
 
