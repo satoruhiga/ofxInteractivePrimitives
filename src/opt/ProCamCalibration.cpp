@@ -57,7 +57,7 @@ void Manager::setup(size_t num_markers)
 	
 	for (int i = 0; i < num_markers; i++)
 	{
-		markers[i] = Marker::Ref(new Marker(i, root));
+		markers[i] = Marker::Ref(new Marker(i, *this));
 	}
 }
 
@@ -83,16 +83,11 @@ ofMatrix4x4 Manager::getHomography()
 	return homography2glModelViewMatrix(homography);
 }
 
-void Manager::update()
-{
-	root.update();
-}
-
 void Manager::draw()
 {
 	ofPushStyle();
 	
-	if (root.getFocusObject())
+	if (getFocusObject())
 	{
 		ofPushStyle();
 		
@@ -100,7 +95,7 @@ void Manager::draw()
 		
 		ofSetColor(255, 0, 0);
 		
-		ofVec2f p = root.getFocusObject()->getPosition();
+		ofVec2f p = getFocusObject()->getPosition();
 		ofNoFill();
 		ofCircle(p, 40);
 		
@@ -112,20 +107,20 @@ void Manager::draw()
 		ofPopStyle();
 	}
 
-	root.draw();
+	RootNode::draw();
 	
 	ofPopStyle();
 }
 
 void Manager::setSelectedImagePoint(int x, int y)
 {
-	Marker *m = (Marker*)root.getFocusObject();
+	Marker *m = (Marker*)getFocusObject();
 	if (m) m->object_pos.set(x, y, 0);
 }
 
 Marker* Manager::getSelectedMarker()
 {
-	return (Marker*)root.getFocusObject();
+	return (Marker*)getFocusObject();
 }
 
 bool Manager::getNeedUpdateCalibration() const

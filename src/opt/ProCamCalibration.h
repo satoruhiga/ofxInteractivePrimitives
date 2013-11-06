@@ -120,13 +120,12 @@ protected:
 	
 };
 
-class Manager
+class Manager : public RootNode
 {
 public:
 	
 	void setup(size_t num_markers);
 	
-	void update();
 	void draw();
 	
 	void load(string path);
@@ -148,7 +147,6 @@ public:
 	
 protected:
 	
-	ofxInteractivePrimitives::RootNode root;
 	vector<Marker::Ref> markers;
 	
 	void markUpdated();
