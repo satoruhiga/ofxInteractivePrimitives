@@ -176,3 +176,4 @@ OFX_INTERACTIVE_PRIMITIVES_END_NAMESPACE
 #include "ui/ofxIPButton.h"
 #include "ui/ofxIPPatcher.h"
 #include "ui/ofxIPStringBox.h"
+#include "ui/ofxIPVertexSelector.h"
