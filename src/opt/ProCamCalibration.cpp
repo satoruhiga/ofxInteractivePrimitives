@@ -175,9 +175,11 @@ float Manager::getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matri
 	
 	int flags = 0;
 	flags |= CV_CALIB_USE_INTRINSIC_GUESS;
-	flags |= CV_CALIB_FIX_PRINCIPAL_POINT | CV_CALIB_FIX_ASPECT_RATIO;
+	flags |= CV_CALIB_FIX_ASPECT_RATIO;
 	flags |= CV_CALIB_ZERO_TANGENT_DIST;
 	flags |= (CV_CALIB_FIX_K1 | CV_CALIB_FIX_K2 | CV_CALIB_FIX_K3 | CV_CALIB_FIX_K4 | CV_CALIB_FIX_K5 | CV_CALIB_FIX_K6 | CV_CALIB_RATIONAL_MODEL);
+	
+	// flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
 	
 	float rms = cv::calibrateCamera(object_points,
 									image_points,
@@ -191,6 +193,17 @@ float Manager::getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matri
 	rvec = rvecs[0];
 	tvec = tvecs[0];
 	
+	return rms;
+}
+
+float Manager::getEstimatedCameraPose(int width, int height, CameraParam &param, float near, float far)
+{
+	cv::Mat camera_matrix, rvec, tvec;
+	cv::Size image_size(width, height);
+	
+	float rms = getEstimatedCameraPose(image_size, camera_matrix, rvec, tvec);
+	
+	param = CameraParam(width, height, camera_matrix, rvec, tvec, near, far);
 	return rms;
 }
 

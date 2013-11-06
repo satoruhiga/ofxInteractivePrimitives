@@ -10,19 +10,12 @@ PROJECTOR_CALIBRATION_BEGIN_NAMESPACE
 
 class Manager;
 
-struct CameraParam
+class CameraParam : public ofCamera
 {
-	ofMatrix4x4 modelview;
-	
-	cv::Mat camera_matrix;
-	
-	float fovX, fovY;
-	float focal_length;
-	ofVec2f principal_point;
-	float width, height;
+public:
 	
 	CameraParam() {}
-	CameraParam(float width, float height, cv::Mat camera_matrix, cv::Mat rvec, cv::Mat tvec) : camera_matrix(camera_matrix), width(width), height(height)
+	CameraParam(float width, float height, cv::Mat camera_matrix, cv::Mat rvec, cv::Mat tvec, float near = 10, float far = 10000) : camera_matrix(camera_matrix), width(width), height(height), near(near), far(far)
 	{
 		{
 			double aspect, focal_length;
@@ -49,7 +42,7 @@ struct CameraParam
 			cv::Mat rot3x3;
 			if(rvec.rows == 3 && rvec.cols == 3) {
 				rot3x3 = rvec;
-			} else {
+			} else	{
 				cv::Rodrigues(rvec, rot3x3);
 			}
 			
@@ -65,9 +58,43 @@ struct CameraParam
 			// convert coordinate system opencv to opengl
 			modelview.postMultScale(1, -1, -1);
 		}
+		
+		updateFrustum();
 	}
 	
-	ofMatrix4x4 getFrustum(float near, float far)
+	void begin(ofRectangle viewport = ofGetCurrentViewport())
+	{
+		ofPushView();
+		
+		ofViewport(viewport.x, viewport.y, viewport.width, viewport.height);
+		
+		ofSetMatrixMode(OF_MATRIX_PROJECTION);
+		ofLoadMatrix(projection);
+		
+		ofSetMatrixMode(OF_MATRIX_MODELVIEW);
+		ofLoadMatrix(modelview);
+	}
+	
+	void end()
+	{
+		ofPopView();
+	}
+	
+protected:
+	
+	ofMatrix4x4 modelview;
+	ofMatrix4x4 projection;
+	
+	cv::Mat camera_matrix;
+	
+	float fovX, fovY;
+	float focal_length;
+	ofVec2f principal_point;
+	float width, height;
+	
+	float near, far;
+
+	void updateFrustum()
 	{
 		const float w = width;
 		const float h = height;
@@ -85,7 +112,10 @@ struct CameraParam
 							near,
 							far);
 		
-		return m;
+		// flip Y-axis
+		m.postMultScale(ofVec3f(1, -1, 1));
+		
+		projection = m;
 	}
 };
 
@@ -135,7 +165,7 @@ public:
 	
 	float getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec);
 
-	float getEstimatedCameraPose(int width, int height, CameraParam &param);
+	float getEstimatedCameraPose(int width, int height, CameraParam &param,  float near = 10, float far = 10000);
 
 	void setSelectedImagePoint(int x, int y);
 	Marker* getSelectedMarker();
@@ -152,17 +182,5 @@ protected:
 	void markUpdated();
 
 };
-
-inline float Manager::getEstimatedCameraPose(int width, int height, CameraParam &param)
-{
-	cv::Mat camera_matrix, rvec, tvec;
-	cv::Size image_size(width, height);
-	
-	float rms = getEstimatedCameraPose(image_size, camera_matrix, rvec, tvec);
-	
-	param = CameraParam(width, height, camera_matrix, rvec, tvec);
-	
-	return rms;
-}
 
 PROJECTOR_CALIBRATION_END_NAMESPACE
