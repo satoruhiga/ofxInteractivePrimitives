@@ -80,6 +80,9 @@ public:
 		ofPopView();
 	}
 	
+	const ofMatrix4x4& getModelview() const { return modelview; }
+	const ofMatrix4x4& getProjection() const { return projection; }
+
 protected:
 	
 	ofMatrix4x4 modelview;
@@ -135,7 +138,7 @@ public:
 	void keyPressed(int key);
 	
 	ofVec3f getObjectPoint() const { return object_pos; }
-	void setObjectPosition(const ofVec3f& v) { object_pos = v; }
+	void setObjectPoint(const ofVec3f& v) { object_pos = v; }
 	
 	ofVec3f getImagePoint() const { return this->getPosition(); }
 	void setImagePoint(const ofVec3f& v) { this->setPosition(v); }
