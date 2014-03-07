@@ -129,8 +129,15 @@ class Marker : public ofxInteractivePrimitives::Marker
 public:
 
 	typedef ofPtr<Marker> Ref;
-	
-	Marker(int id, Node &parent) : id(id), need_update_calib(false), ofxInteractivePrimitives::Marker(parent) {}
+
+	Marker(Node &parent)
+	: need_update_calib(false)
+	, ofxInteractivePrimitives::Marker(parent) {}
+
+	Marker(const string& marker_identity_string, Node &parent)
+	: marker_identity_string(marker_identity_string)
+	, need_update_calib(false)
+	, ofxInteractivePrimitives::Marker(parent) {}
 	
 	void draw();
 	void update();
@@ -145,38 +152,42 @@ public:
 	
 protected:
 	
-	int id;
 	ofVec3f object_pos;
 	
 	ofVec3f last_position;
 	bool need_update_calib;
 	
+	string marker_identity_string;
 };
 
 class Manager : public RootNode
 {
 public:
 	
-	void setup(size_t num_markers);
+	void setup(size_t num_markers = 0);
 	
 	void draw();
-	
-	void load(string path);
-	void save(string path);
 	
 	ofMatrix4x4 getHomography();
 	
 	float getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec);
-
 	float getEstimatedCameraPose(int width, int height, CameraParam &param,  float near = 10, float far = 10000);
 
 	void setSelectedImagePoint(int x, int y);
 	Marker* getSelectedMarker();
 	
-	Marker* operator[](size_t idx) const { return markers[idx].get(); }
+	Marker::Ref operator[](size_t idx) const { return markers[idx]; }
 	size_t size() const { return markers.size(); }
 	
+	Marker::Ref addMarker(const string& marker_identity_string = "");
+	void removeMarker(Marker::Ref o);
+	
+	void clear();
+	
 	bool getNeedUpdateCalibration() const;
+	
+	void load(string path);
+	void save(string path);
 	
 protected:
 	

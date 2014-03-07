@@ -24,7 +24,8 @@ void Marker::draw()
 void Marker::update()
 {
 	stringstream ss;
-	ss << id << endl;
+	if (!marker_identity_string.empty())
+		ss << marker_identity_string << endl;
 	ss << getX() << ":" << getY() << endl;
 	ss << (int)object_pos.x << ":" << (int)object_pos.y << ":" << (int)object_pos.z;
 	
@@ -59,7 +60,7 @@ void Manager::setup(size_t num_markers)
 	
 	for (int i = 0; i < num_markers; i++)
 	{
-		markers[i] = Marker::Ref(new Marker(i, *this));
+		markers[i] = Marker::Ref(new Marker(*this));
 	}
 }
 
@@ -196,6 +197,33 @@ float Manager::getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matri
 	return rms;
 }
 
+Marker::Ref Manager::addMarker(const string& marker_identity_string)
+{
+	Marker* o = new Marker(marker_identity_string, *this);
+	Marker::Ref ref = Marker::Ref(o);
+	markers.push_back(ref);
+	return ref;
+}
+
+void Manager::removeMarker(Marker::Ref o)
+{
+	vector<Marker::Ref>::iterator it = markers.begin();
+	while (it != markers.end())
+	{
+		if (o == *it)
+		{
+			(*it)->dispose();
+			it = markers.erase(it);
+		} else it++;
+	}
+}
+
+void Manager::clear()
+{
+	clearChildren();
+	markers.clear();
+}
+
 float Manager::getEstimatedCameraPose(int width, int height, CameraParam &param, float near, float far)
 {
 	cv::Mat camera_matrix, rvec, tvec;
@@ -220,11 +248,11 @@ void Manager::load(string path)
 	vector<string> keys;
 	config->keys(keys);
 
-	assert(keys.size() == markers.size());
+	clear();
 	
 	for (int i = 0; i < keys.size(); i++)
 	{
-		Marker* o = (*this)[i];
+		Marker::Ref o = addMarker();
 		string m = keys[i];
 		
 		o->setPosition(config->getDouble(m + ".image[@x]", 0),
@@ -244,7 +272,7 @@ void Manager::save(string path)
 	
 	for (int i = 0; i < markers.size(); i++)
 	{
-		Marker* o = (*this)[i];
+		Marker::Ref o = (*this)[i];
 		
 		string m = "marker[" + ofToString(i) + "]";
 		
