@@ -10,7 +10,7 @@ PROJECTOR_CALIBRATION_BEGIN_NAMESPACE
 
 class Manager;
 
-class CameraParam : public ofCamera
+class CameraParam
 {
 public:
 	
@@ -83,6 +83,9 @@ public:
 	const ofMatrix4x4& getModelview() const { return modelview; }
 	const ofMatrix4x4& getProjection() const { return projection; }
 
+	bool load(const string& path);
+	void save(const string& path);
+	
 protected:
 	
 	ofMatrix4x4 modelview;

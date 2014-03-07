@@ -8,6 +8,38 @@ PROJECTOR_CALIBRATION_BEGIN_NAMESPACE
 
 static ofMatrix4x4 homography2glModelViewMatrix(const cv::Mat &homography);
 
+#pragma mark - CameraParam
+
+bool CameraParam::load(const string& path)
+{
+	ofFile file(path);
+	if (!file.exists()) return false;
+	
+	string tmp;
+	
+	file >> tmp;
+	file >> projection;
+	file >> tmp;
+	file >> modelview;
+	
+	return true;
+}
+
+void CameraParam::save(const string& path)
+{
+	ofFile file(path, ofFile::WriteOnly);
+	
+	file << "# projection" << endl;
+	file << projection;
+	file << endl;
+	
+	file << "# modelview" << endl;
+	file << modelview;
+	file << endl;
+	
+	file.close();
+}
+
 #pragma mark - CalibrationMarker
 
 void Marker::draw()
