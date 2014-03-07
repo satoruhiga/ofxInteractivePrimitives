@@ -454,7 +454,7 @@ public:
 		if (focus_object)
 		{
 			focus_object->focus = false;
-			focus_object= NULL;
+			focus_object = NULL;
 		}
 		
 		if (current_object)
@@ -466,7 +466,7 @@ public:
 	}
 };
 
-Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false), enable(true)
+Node::Node() : object_id(0), hover(false), down(false), visible(true), focus(false), enable(true), ofNode()
 {
 }
 
@@ -543,7 +543,7 @@ void Node::clearChildren()
 {
 	while (getChildren().size())
 	{
-		getChildren()[0]->clearParent();
+		getChildren()[0]->dispose();
 	}
 }
 
@@ -608,7 +608,9 @@ void Node::update(const Internal &)
 
 void Node::cancelFocus()
 {
-	getContext()->clearFocus();
+	Context *ctx = getContext();
+	if (ctx->focus_object == this)
+		getContext()->clearFocus();
 }
 
 // RootNode
