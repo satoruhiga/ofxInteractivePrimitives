@@ -29,11 +29,11 @@ void CameraParam::save(const string& path)
 {
 	ofFile file(path, ofFile::WriteOnly);
 	
-	file << "# projection" << endl;
+	file << "#projection" << endl;
 	file << projection;
 	file << endl;
 	
-	file << "# modelview" << endl;
+	file << "#modelview" << endl;
 	file << modelview;
 	file << endl;
 	
@@ -178,7 +178,7 @@ void Manager::markUpdated()
 
 float Manager::getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec)
 {
-	assert(markers.size() >= 6);
+	if (markers.size() <= 6) return -1;
 	
 	markUpdated();
 	
@@ -263,7 +263,11 @@ float Manager::getEstimatedCameraPose(int width, int height, CameraParam &param,
 	
 	float rms = getEstimatedCameraPose(image_size, camera_matrix, rvec, tvec);
 	
-	param = CameraParam(width, height, camera_matrix, rvec, tvec, near, far);
+	if (rms > 0)
+	{
+		param = CameraParam(width, height, camera_matrix, rvec, tvec, near, far);
+	}
+	
 	return rms;
 }
 
