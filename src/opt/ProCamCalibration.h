@@ -173,8 +173,8 @@ public:
 	
 	ofMatrix4x4 getHomography();
 	
-	float getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec);
-	float getEstimatedCameraPose(int width, int height, CameraParam &param,  float near = 10, float far = 10000);
+	float getEstimatedCameraPose(cv::Size image_size, cv::Mat& camera_matrix, cv::Mat& rvec, cv::Mat& tvec, float force_fov = 0);
+	float getEstimatedCameraPose(int width, int height, CameraParam &param,  float near = 10, float far = 10000, float force_fov = 0);
 
 	void setSelectedImagePoint(int x, int y);
 	Marker* getSelectedMarker();
