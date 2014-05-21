@@ -15,7 +15,7 @@ class CameraParam
 public:
 	
 	CameraParam() {}
-	CameraParam(float width, float height, cv::Mat camera_matrix, cv::Mat rvec, cv::Mat tvec, float near = 10, float far = 10000) : camera_matrix(camera_matrix), width(width), height(height), near(near), far(far)
+	CameraParam(float width, float height, cv::Mat camera_matrix, cv::Mat rvec, cv::Mat tvec, float near_dist = 10, float far_dist = 10000) : camera_matrix(camera_matrix), width(width), height(height), near_dist(near_dist), far_dist(far_dist)
 	{
 		{
 			double aspect, focal_length;
@@ -98,7 +98,7 @@ protected:
 	ofVec2f principal_point;
 	float width, height;
 	
-	float near, far;
+	float near_dist, far_dist;
 
 	void updateFrustum()
 	{
@@ -111,12 +111,12 @@ protected:
 		const float cy = camera_matrix.at<double>(1, 2);
 
 		ofMatrix4x4 m;
-		m.makeFrustumMatrix(near * (-cx) / fx,
-							near * (w - cx) / fx,
-							near * (cy - h) / fy,
-							near * (cy) / fy,
-							near,
-							far);
+		m.makeFrustumMatrix(near_dist * (-cx) / fx,
+							near_dist * (w - cx) / fx,
+							near_dist * (cy - h) / fy,
+							near_dist * (cy) / fy,
+							near_dist,
+							far_dist);
 		
 		// flip Y-axis
 		m.postMultScale(ofVec3f(1, -1, 1));

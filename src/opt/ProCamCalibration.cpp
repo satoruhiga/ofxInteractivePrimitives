@@ -279,7 +279,7 @@ void Manager::clear()
 }
 
 float Manager::getEstimatedCameraPose(int width, int height, CameraParam& param,
-									  float near, float far, float force_fov)
+									  float near_dist, float far_dist, float force_fov)
 {
 	cv::Mat camera_matrix, rvec, tvec;
 	cv::Size image_size(width, height);
@@ -290,7 +290,7 @@ float Manager::getEstimatedCameraPose(int width, int height, CameraParam& param,
 	if (rms > 0)
 	{
 		param =
-			CameraParam(width, height, camera_matrix, rvec, tvec, near, far);
+			CameraParam(width, height, camera_matrix, rvec, tvec, near_dist, far_dist);
 	}
 
 	return rms;
