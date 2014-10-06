@@ -56,7 +56,7 @@ void Marker::draw()
 void Marker::update()
 {
 	stringstream ss;
-	if (!marker_identity_string.empty()) ss << marker_identity_string << endl;
+	if (!marker_label.empty()) ss << marker_label << endl;
 	ss << getX() << ":" << getY() << endl;
 	ss << (int)object_pos.x << ":" << (int)object_pos.y << ":"
 	   << (int)object_pos.z;
@@ -249,9 +249,9 @@ float Manager::getEstimatedCameraPose(cv::Size image_size,
 	return rms;
 }
 
-Marker::Ref Manager::addMarker(const string& marker_identity_string)
+Marker::Ref Manager::addMarker(const string& marker_label)
 {
-	Marker* o = new Marker(marker_identity_string, *this);
+	Marker* o = new Marker(marker_label, *this);
 	Marker::Ref ref = Marker::Ref(o);
 	markers.push_back(ref);
 	return ref;
@@ -323,6 +323,8 @@ void Manager::load(string path)
 		o->object_pos.set(config->getDouble(m + ".object[@x]", 0),
 						  config->getDouble(m + ".object[@y]", 0),
 						  config->getDouble(m + ".object[@z]", 0));
+		
+		o->setLabel(config->getString(m + ".label", ""));
 	}
 }
 
@@ -344,6 +346,8 @@ void Manager::save(string path)
 		config->setDouble(m + ".object[@x]", o->object_pos.x);
 		config->setDouble(m + ".object[@y]", o->object_pos.y);
 		config->setDouble(m + ".object[@z]", o->object_pos.z);
+		
+		config->setString(m + ".label", o->getLabel());
 	}
 
 	config->save(ofToDataPath(path));

@@ -137,8 +137,8 @@ public:
 	: need_update_calib(false)
 	, ofxInteractivePrimitives::Marker(parent) {}
 
-	Marker(const string& marker_identity_string, Node &parent)
-	: marker_identity_string(marker_identity_string)
+	Marker(const string& marker_label, Node &parent)
+	: marker_label(marker_label)
 	, need_update_calib(false)
 	, ofxInteractivePrimitives::Marker(parent) {}
 	
@@ -153,6 +153,9 @@ public:
 	ofVec3f getImagePoint() const { return this->getPosition(); }
 	void setImagePoint(const ofVec3f& v) { this->setPosition(v); }
 	
+	void setLabel(const string& label) { marker_label = label; }
+	const string& getLabel() const { return marker_label; }
+	
 protected:
 	
 	ofVec3f object_pos;
@@ -160,7 +163,7 @@ protected:
 	ofVec3f last_position;
 	bool need_update_calib;
 	
-	string marker_identity_string;
+	string marker_label;
 };
 
 class Manager : public RootNode
@@ -182,7 +185,7 @@ public:
 	Marker::Ref operator[](size_t idx) const { return markers[idx]; }
 	size_t size() const { return markers.size(); }
 	
-	Marker::Ref addMarker(const string& marker_identity_string = "");
+	Marker::Ref addMarker(const string& marker_label = "");
 	void removeMarker(Marker::Ref o);
 	
 	void clear();
