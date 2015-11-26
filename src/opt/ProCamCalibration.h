@@ -189,7 +189,7 @@ public:
 	
 	bool getNeedUpdateCalibration() const;
 	
-	void load(string path);
+	bool load(const string& path);
 	void save(string path);
 	
 protected:

@@ -234,12 +234,12 @@ public:
 	
 	void draw()
 	{
-		ofRect(rect);
+		ofDrawRectangle(rect);
 	}
 	
 	void hittest()
 	{
-		ofRect(rect);
+		ofDrawRectangle(rect);
 	}
 	
 	void addCord(PatchCord *cord)
@@ -462,7 +462,7 @@ public:
 			r.width += 4;
 			r.height += 4;
 			
-			ofRect(r);
+			ofDrawRectangle(r);
 			
 			ofPopStyle();
 		}
@@ -489,7 +489,7 @@ public:
 			
 			ofRectangle r;
 			r.setFromCenter(p, 14, 8);
-			ofRect(r);
+			ofDrawRectangle(r);
 		}
 		
 		ofFill();

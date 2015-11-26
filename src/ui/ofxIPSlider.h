@@ -28,12 +28,12 @@ public:
 		ofPushStyle();
 		
 		ofNoFill();
-		ofRect(getContentRect());
+		ofDrawRectangle(getContentRect());
 		
 		ofFill();
 		ofRectangle r = getContentRect();
 		r.width = slider_width * getContentWidth();
-		ofRect(r);
+		ofDrawRectangle(r);
 		
 		ofPopStyle();
 	}
@@ -43,7 +43,7 @@ public:
 		ofFill();
 		
 		pushID(0);
-		ofRect(getContentRect());
+		ofDrawRectangle(getContentRect());
 		popID();
 	}
 	

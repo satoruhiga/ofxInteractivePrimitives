@@ -298,9 +298,9 @@ float Manager::getEstimatedCameraPose(int width, int height, CameraParam& param,
 
 // IO
 
-void Manager::load(string path)
+bool Manager::load(const string& path)
 {
-	if (!ofFile::doesFileExist(path)) return;
+	if (!ofFile::doesFileExist(path)) return false;
 
 	Poco::AutoPtr<Poco::Util::XMLConfiguration> config =
 		new Poco::Util::XMLConfiguration;
@@ -324,6 +324,8 @@ void Manager::load(string path)
 						  config->getDouble(m + ".object[@y]", 0),
 						  config->getDouble(m + ".object[@z]", 0));
 	}
+	
+	return true;
 }
 
 void Manager::save(string path)

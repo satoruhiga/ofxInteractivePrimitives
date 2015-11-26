@@ -51,7 +51,7 @@ public:
 		ofPushStyle();
 		
 		ofNoFill();
-		ofRect(getContentRect());
+		ofDrawRectangle(getContentRect());
 
 		ofDrawBitmapString(text, margin, Font::CHAR_HEIGHT + margin);
 		
@@ -61,7 +61,7 @@ public:
 	void hittest()
 	{
 		ofFill();
-		ofRect(getContentRect());
+		ofDrawRectangle(getContentRect());
 	}
 
 	float getMargin() const { return margin; }

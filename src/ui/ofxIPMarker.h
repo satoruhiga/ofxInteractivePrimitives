@@ -24,20 +24,20 @@ public:
 		else
 			ofSetColor(255, 0, 0);
 
-		ofLine(-10, 0, 10, 0);
-		ofLine(0, -10, 0, 10);
+		ofDrawLine(-10, 0, 10, 0);
+		ofDrawLine(0, -10, 0, 10);
 
 		if (isDown())
 		{
 			ofNoFill();
 			ofSetColor(255, 0, 0);
-			ofRect(-6, -6, 12, 12);
+			ofDrawRectangle(-6, -6, 12, 12);
 		}
 		else if (isHover())
 		{
 			ofNoFill();
 			ofSetColor(255, 0, 0);
-			ofRect(-3, -3, 6, 6);
+			ofDrawRectangle(-3, -3, 6, 6);
 		}
 
 		ofSetColor(0, 255, 0);
@@ -47,7 +47,7 @@ public:
 	void hittest()
 	{
 		ofFill();
-		ofRect(-15, -15, 30, 30);
+		ofDrawRectangle(-15, -15, 30, 30);
 	}
 
 	void mouseDragged(int x, int y, int button)

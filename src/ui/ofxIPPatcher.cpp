@@ -38,7 +38,7 @@ void PatchCord::draw()
 	if (this->isFocus())
 		ofSetColor(ofColor::fromHex(0xCCFF77), 127);
 
-	ofLine(p0, p1);
+	ofDrawLine(p0, p1);
 	
 	ofPopStyle();
 }
@@ -51,7 +51,7 @@ void PatchCord::hittest()
 	const ofVec3f p1 = getUpstream()->getPatchObject()->globalToLocalPos(getDownstream()->getGlobalPos());
 	
 	ofSetLineWidth(3);
-	ofLine(p0, p1);
+	ofDrawLine(p0, p1);
 }
 
 void PatchCord::keyPressed(int key)

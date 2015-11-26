@@ -24,7 +24,7 @@ public:
 		{
 			ofFill();
 			ofSetColor(0, 255, 0);
-			ofRect(getContentRect());
+			ofDrawRectangle(getContentRect());
 
 			ofSetColor(0, 127, 0);
 		}
@@ -32,13 +32,13 @@ public:
 		{
 			ofNoFill();
 			ofSetColor(255, 0, 255);
-			ofRect(getContentRect());
+			ofDrawRectangle(getContentRect());
 		}
 		else
 		{
 			ofNoFill();
 			ofSetColor(0, 255, 0);
-			ofRect(getContentRect());
+			ofDrawRectangle(getContentRect());
 		}
 
 		ofDrawBitmapString(text, getMargin(), Font::CHAR_HEIGHT + getMargin());

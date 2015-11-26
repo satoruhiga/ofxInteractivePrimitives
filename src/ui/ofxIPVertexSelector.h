@@ -131,7 +131,7 @@ public:
 			ofPushMatrix();
 			ofTranslate(p);
 			ofRotateY(ofGetElapsedTimef() * 720);
-			ofCircle(0, 0, 10);
+			ofDrawCircle(0, 0, 10);
 			ofPopMatrix();
 		}
 		
