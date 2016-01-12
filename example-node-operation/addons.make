@@ -1,0 +1,3 @@
+ofxCv
+ofxInteractivePrimitives
+ofxOpenCv
