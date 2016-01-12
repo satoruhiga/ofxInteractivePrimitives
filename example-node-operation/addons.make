@@ -1,3 +1,1 @@
-ofxCv
 ofxInteractivePrimitives
-ofxOpenCv
