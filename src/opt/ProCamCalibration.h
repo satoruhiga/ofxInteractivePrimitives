@@ -180,7 +180,7 @@ public:
 		if (hasFocus())
 		{
 			ofNoFill();
-			ofRect(-15, -15, 30, 30);
+			ofDrawRectangle(-15, -15, 30, 30);
 		}
 	}
 
@@ -264,12 +264,12 @@ public:
 			
 			ofVec2f p = getFocusObject()->getPosition();
 			ofNoFill();
-			ofCircle(p, 40);
+			ofDrawCircle(p, 40);
 			
-			ofCircle(p, 10);
+			ofDrawCircle(p, 10);
 			
-			ofLine(-10000, p.y, 10000, p.y);
-			ofLine(p.x, -10000, p.x, 10000);
+			ofDrawLine(-10000, p.y, 10000, p.y);
+			ofDrawLine(p.x, -10000, p.x, 10000);
 			
 			ofPopStyle();
 		}
