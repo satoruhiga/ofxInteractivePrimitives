@@ -27,7 +27,6 @@ public:
 
 	Context() : current_object_id(0), current_depth(0), focus_object(NULL), current_object(NULL)
 	{
-		enableAllEvent();
 	}
 
 	~Context()
@@ -82,6 +81,13 @@ public:
 	
 	void update()
 	{
+		static bool inited = false;
+		if (ofGetMainLoop()->getCurrentWindow() && inited == false)
+		{
+			enableAllEvent();
+			inited = true;
+		}
+
 		last_update_time = ofGetElapsedTimef();
 	}
 	
